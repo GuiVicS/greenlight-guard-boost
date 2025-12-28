@@ -13,7 +13,9 @@ import {
   Trash2,
   Loader2,
   Shield,
-  Mail
+  Mail,
+  Globe,
+  Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -61,14 +63,56 @@ export default function Settings() {
     role: 'staff' as 'admin' | 'staff',
   });
   const [saving, setSaving] = useState(false);
+  
+  // App settings state
+  const [checkoutBaseUrl, setCheckoutBaseUrl] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     if (userRole === 'admin') {
       fetchUsers();
+      fetchAppSettings();
     } else {
       setLoading(false);
     }
   }, [userRole]);
+
+  async function fetchAppSettings() {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('*')
+        .single();
+      
+      if (data && !error) {
+        setCheckoutBaseUrl(data.checkout_base_url || '');
+      }
+    } catch (error) {
+      console.error('Error fetching app settings:', error);
+    }
+  }
+
+  async function saveAppSettings() {
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ checkout_base_url: checkoutBaseUrl })
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Update all rows
+      
+      if (error) throw error;
+      
+      toast({ title: 'Configurações salvas!' });
+    } catch (error: unknown) {
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Erro ao salvar configurações',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingSettings(false);
+    }
+  }
 
   async function fetchUsers() {
     try {
@@ -270,6 +314,46 @@ export default function Settings() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Checkout Settings */}
+        <div className="glass-card p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Globe className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Configurações do Checkout</h3>
+              <p className="text-sm text-muted-foreground">
+                Configure a URL base para o checkout de pagamentos
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>URL Base do Checkout</Label>
+              <Input
+                value={checkoutBaseUrl}
+                onChange={(e) => setCheckoutBaseUrl(e.target.value)}
+                placeholder="https://seudominio.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                Esta URL será usada para gerar os links de pagamento no overlay de bloqueio.
+                Exemplo: https://seuapp.lovable.app
+              </p>
+            </div>
+            
+            <Button 
+              variant="glow" 
+              onClick={saveAppSettings}
+              disabled={savingSettings}
+            >
+              {savingSettings && <Loader2 className="w-4 h-4 animate-spin" />}
+              <Save className="w-4 h-4" />
+              Salvar Configurações
+            </Button>
+          </div>
         </div>
 
         {/* System Info */}

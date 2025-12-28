@@ -56,6 +56,7 @@ export default function Subscriptions() {
     monthly_value: '',
     due_date: '',
     status: 'active' as 'active' | 'overdue' | 'cancelled',
+    country: 'BR',
   });
   const { toast } = useToast();
 
@@ -120,6 +121,7 @@ export default function Subscriptions() {
         monthly_value: parseFloat(formData.monthly_value),
         due_date: formData.due_date,
         status: formData.status,
+        country: formData.country,
       };
 
       if (editingSubscription) {
@@ -158,6 +160,7 @@ export default function Subscriptions() {
       monthly_value: '',
       due_date: '',
       status: 'active',
+      country: 'BR',
     });
     setEditingSubscription(null);
   };
@@ -170,6 +173,7 @@ export default function Subscriptions() {
       monthly_value: subscription.monthly_value.toString(),
       due_date: subscription.due_date,
       status: subscription.status,
+      country: (subscription as any).country || 'BR',
     });
     setIsDialogOpen(true);
   };
@@ -398,6 +402,25 @@ export default function Subscriptions() {
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>País</Label>
+                <Select
+                  value={formData.country}
+                  onValueChange={(value) => setFormData({ ...formData, country: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o país" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BR">🇧🇷 Brasil</SelectItem>
+                    <SelectItem value="US">🇺🇸 Estados Unidos</SelectItem>
+                    <SelectItem value="PT">🇵🇹 Portugal</SelectItem>
+                    <SelectItem value="ES">🇪🇸 Espanha</SelectItem>
+                    <SelectItem value="MX">🇲🇽 México</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

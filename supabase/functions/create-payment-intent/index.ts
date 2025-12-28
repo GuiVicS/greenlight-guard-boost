@@ -66,6 +66,18 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Determine payment methods and currency based on country
+    const country = subscription.country || "BR";
+    const countryConfig: Record<string, { currency: string; methods: string[] }> = {
+      BR: { currency: "brl", methods: paymentMethod === "boleto" ? ["boleto"] : ["card"] },
+      US: { currency: "usd", methods: ["card"] },
+      PT: { currency: "eur", methods: ["card"] },
+      ES: { currency: "eur", methods: ["card"] },
+      MX: { currency: "mxn", methods: paymentMethod === "oxxo" ? ["oxxo"] : ["card"] },
+    };
+
+    const config = countryConfig[country] || countryConfig.BR;
+
     // Create pending payment
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -89,18 +101,19 @@ Deno.serve(async (req) => {
     const secretKey = stripeSettings.secret_key_encrypted;
     const amountInCents = Math.round(subscription.monthly_value * 100);
 
-    // Build payment method types
-    const paymentMethodTypes = paymentMethod === "boleto" ? "boleto" : "card";
-
     // Create PaymentIntent
     const params = new URLSearchParams({
       amount: String(amountInCents),
-      currency: "brl",
-      "payment_method_types[]": paymentMethodTypes,
+      currency: config.currency,
       "metadata[subscription_id]": subscriptionId,
       "metadata[payment_id]": payment.id,
       "metadata[asset_id]": subscription.asset?.id || "",
       description: `${subscription.plan_name} - ${subscription.asset?.name}`,
+    });
+
+    // Add payment method types
+    config.methods.forEach(method => {
+      params.append("payment_method_types[]", method);
     });
 
     // Add receipt email if available
