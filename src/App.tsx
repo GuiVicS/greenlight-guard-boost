@@ -12,8 +12,9 @@ import Subscriptions from "./pages/Subscriptions";
 import Payments from "./pages/Payments";
 import Logs from "./pages/Logs";
 import StripeIntegration from "./pages/StripeIntegration";
+import Checkout from "./pages/Checkout";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -101,6 +102,8 @@ const AppRoutes = () => (
         </ProtectedRoute>
       }
     />
+    <Route path="/checkout/:assetId" element={<Checkout />} />
+    <Route path="/checkout/success" element={<CheckoutSuccess />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
