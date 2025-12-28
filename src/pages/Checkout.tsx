@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Loader2, CreditCard, QrCode, Shield, CheckCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, CreditCard, QrCode, CheckCircle, Shield, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { CardPaymentForm } from "@/components/checkout/CardPaymentForm";
+import { PixPaymentForm } from "@/components/checkout/PixPaymentForm";
 
 interface SubscriptionData {
   id: string;
@@ -31,9 +33,12 @@ export default function Checkout() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "pix">("card");
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [creatingIntent, setCreatingIntent] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     fetchSubscription();
@@ -67,7 +72,6 @@ export default function Checkout() {
 
       if (error) throw error;
       
-      // Type assertion to handle the nested structure
       const subscriptionData = data as unknown as SubscriptionData;
       setSubscription(subscriptionData);
     } catch (error) {
@@ -82,38 +86,55 @@ export default function Checkout() {
     }
   };
 
-  const handlePayment = async () => {
+  const createPaymentIntent = async (method: "card" | "pix") => {
     if (!subscription) return;
 
-    setProcessing(true);
+    setCreatingIntent(true);
+    setClientSecret(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      const { data, error } = await supabase.functions.invoke("create-payment-intent", {
         body: {
           subscriptionId: subscription.id,
-          paymentMethod,
-          successUrl: `${window.location.origin}/checkout/success`,
-          cancelUrl: `${window.location.origin}/checkout/${assetId}`,
+          paymentMethod: method,
         },
       });
 
       if (error) throw error;
 
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No checkout URL returned");
+      if (data.publishableKey) {
+        setStripePromise(loadStripe(data.publishableKey));
+      }
+
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
       }
     } catch (error: any) {
-      console.error("Payment error:", error);
+      console.error("Payment intent error:", error);
       toast({
-        title: "Erro no pagamento",
+        title: "Erro",
         description: error.message || "Não foi possível iniciar o pagamento",
         variant: "destructive",
       });
     } finally {
-      setProcessing(false);
+      setCreatingIntent(false);
     }
+  };
+
+  useEffect(() => {
+    if (subscription && !clientSecret) {
+      createPaymentIntent(paymentMethod);
+    }
+  }, [subscription]);
+
+  const handleTabChange = (value: string) => {
+    const method = value as "card" | "pix";
+    setPaymentMethod(method);
+    createPaymentIntent(method);
+  };
+
+  const handlePaymentSuccess = () => {
+    setPaymentSuccess(true);
   };
 
   if (loading) {
@@ -140,126 +161,169 @@ export default function Checkout() {
     );
   }
 
-  const primaryColor = subscription.asset.checkout_primary_color || "hsl(var(--primary))";
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        {subscription.asset.checkout_logo_url && (
-          <div className="flex justify-center mb-6">
-            <img 
-              src={subscription.asset.checkout_logo_url} 
-              alt="Logo" 
-              className="max-h-16 object-contain"
-            />
-          </div>
-        )}
-
-        <Card className="shadow-xl border-border/50">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">Regularizar Pagamento</CardTitle>
-            {subscription.asset.checkout_message && (
-              <p className="text-muted-foreground mt-2">
-                {subscription.asset.checkout_message}
-              </p>
-            )}
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Order Summary */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Ativo</span>
-                <span className="font-medium">{subscription.asset.name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Plano</span>
-                <span className="font-medium">{subscription.plan_name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Cliente</span>
-                <span className="font-medium">{subscription.asset.client.name}</span>
-              </div>
-              <div className="border-t border-border pt-3 flex justify-between">
-                <span className="font-medium">Total</span>
-                <span className="text-xl font-bold" style={{ color: primaryColor }}>
-                  R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}
-                </span>
-              </div>
-            </div>
-
-            {/* Payment Method Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Forma de pagamento</Label>
-              <RadioGroup
-                value={paymentMethod}
-                onValueChange={(value) => setPaymentMethod(value as "card" | "pix")}
-                className="grid grid-cols-2 gap-3"
-              >
-                <Label
-                  htmlFor="card"
-                  className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    paymentMethod === "card" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <RadioGroupItem value="card" id="card" className="sr-only" />
-                  <CreditCard className="h-5 w-5" style={{ color: paymentMethod === "card" ? primaryColor : undefined }} />
-                  <div>
-                    <p className="font-medium">Cartão</p>
-                    <p className="text-xs text-muted-foreground">Crédito ou débito</p>
-                  </div>
-                </Label>
-
-                <Label
-                  htmlFor="pix"
-                  className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    paymentMethod === "pix" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <RadioGroupItem value="pix" id="pix" className="sr-only" />
-                  <QrCode className="h-5 w-5" style={{ color: paymentMethod === "pix" ? primaryColor : undefined }} />
-                  <div>
-                    <p className="font-medium">Pix</p>
-                    <p className="text-xs text-muted-foreground">Pagamento instantâneo</p>
-                  </div>
-                </Label>
-              </RadioGroup>
-            </div>
-
-            {/* Pay Button */}
-            <Button
-              onClick={handlePayment}
-              disabled={processing}
-              className="w-full h-12 text-base font-semibold"
-              style={{ backgroundColor: primaryColor }}
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  Pagar R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}
-                </>
-              )}
-            </Button>
-
-            {/* Security Badge */}
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <Shield className="h-4 w-4" />
-              <span>Pagamento seguro processado pelo Stripe</span>
-            </div>
+  if (paymentSuccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Pagamento confirmado!</h2>
+            <p className="text-muted-foreground mb-4">
+              Seu pagamento foi processado com sucesso. Seu ativo será desbloqueado automaticamente.
+            </p>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Ao realizar o pagamento, seu site será desbloqueado automaticamente.
-        </p>
+  const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
+      {/* Top Banner */}
+      <div 
+        className="w-full py-3 text-center text-sm font-medium text-white"
+        style={{ backgroundColor: primaryColor }}
+      >
+        <AlertTriangle className="inline-block h-4 w-4 mr-2" />
+        ATENÇÃO! APÓS O PAGAMENTO, SEU ATIVO SERÁ DESBLOQUEADO AUTOMATICAMENTE.
+      </div>
+
+      <div className="container max-w-6xl mx-auto p-4 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Payment Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {subscription.asset.checkout_logo_url && (
+              <div className="flex justify-center lg:justify-start">
+                <img 
+                  src={subscription.asset.checkout_logo_url} 
+                  alt="Logo" 
+                  className="max-h-12 object-contain"
+                />
+              </div>
+            )}
+
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    1
+                  </div>
+                  <CardTitle className="text-lg">Pagamento</CardTitle>
+                </div>
+                {subscription.asset.checkout_message && (
+                  <p className="text-sm text-muted-foreground mt-2 ml-11">
+                    {subscription.asset.checkout_message}
+                  </p>
+                )}
+              </CardHeader>
+
+              <CardContent>
+                <Tabs value={paymentMethod} onValueChange={handleTabChange}>
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="card" className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Cartão
+                    </TabsTrigger>
+                    <TabsTrigger value="pix" className="flex items-center gap-2">
+                      <QrCode className="h-4 w-4" />
+                      Pix
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {creatingIntent ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : stripePromise && clientSecret ? (
+                    <Elements 
+                      stripe={stripePromise} 
+                      options={{ 
+                        clientSecret,
+                        appearance: {
+                          theme: "stripe",
+                          variables: {
+                            colorPrimary: primaryColor,
+                          },
+                        },
+                        locale: "pt-BR",
+                      }}
+                    >
+                      <TabsContent value="card" className="mt-0">
+                        <CardPaymentForm 
+                          amount={subscription.monthly_value}
+                          primaryColor={primaryColor}
+                          onSuccess={handlePaymentSuccess}
+                        />
+                      </TabsContent>
+                      <TabsContent value="pix" className="mt-0">
+                        <PixPaymentForm 
+                          clientSecret={clientSecret}
+                          amount={subscription.monthly_value}
+                          primaryColor={primaryColor}
+                          onSuccess={handlePaymentSuccess}
+                        />
+                      </TabsContent>
+                    </Elements>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Erro ao carregar formulário de pagamento. Tente novamente.
+                    </div>
+                  )}
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Order Summary */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">RESUMO</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Ativo</span>
+                  <span className="font-medium">{subscription.asset.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Plano</span>
+                  <span className="font-medium">{subscription.plan_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cliente</span>
+                  <span className="font-medium">{subscription.asset.client.name}</span>
+                </div>
+
+                <div className="border-t border-border pt-4">
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-medium">Total</span>
+                    <div className="text-right">
+                      <span 
+                        className="text-2xl font-bold"
+                        style={{ color: primaryColor }}
+                      >
+                        R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        em até 12x no cartão
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Shield className="h-4 w-4" />
+              <span>Pagamento 100% seguro</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
