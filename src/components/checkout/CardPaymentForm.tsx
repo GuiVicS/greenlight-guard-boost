@@ -5,21 +5,26 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency, getTranslations } from "@/lib/checkout-utils";
 
 interface CardPaymentFormProps {
   amount: number;
   primaryColor: string;
   onSuccess: () => void;
   isDarkTheme?: boolean;
+  country?: string;
 }
 
-export function CardPaymentForm({ amount, primaryColor, onSuccess, isDarkTheme = false }: CardPaymentFormProps) {
+export function CardPaymentForm({ amount, primaryColor, onSuccess, isDarkTheme = false, country = 'BR' }: CardPaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const t = getTranslations(country);
+  const formattedAmount = formatCurrency(amount, country);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,21 +46,21 @@ export function CardPaymentForm({ amount, primaryColor, onSuccess, isDarkTheme =
 
       if (error) {
         toast({
-          title: "Erro no pagamento",
-          description: error.message || "Ocorreu um erro ao processar o pagamento",
+          title: country === 'BR' ? "Erro no pagamento" : "Payment error",
+          description: error.message || (country === 'BR' ? "Ocorreu um erro ao processar o pagamento" : "An error occurred while processing the payment"),
           variant: "destructive",
         });
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
         toast({
-          title: "Pagamento confirmado!",
-          description: "Seu pagamento foi processado com sucesso.",
+          title: country === 'BR' ? "Pagamento confirmado!" : "Payment confirmed!",
+          description: country === 'BR' ? "Seu pagamento foi processado com sucesso." : "Your payment was processed successfully.",
         });
         onSuccess();
       }
     } catch (err: any) {
       toast({
-        title: "Erro",
-        description: err.message || "Ocorreu um erro inesperado",
+        title: country === 'BR' ? "Erro" : "Error",
+        description: err.message || (country === 'BR' ? "Ocorreu um erro inesperado" : "An unexpected error occurred"),
         variant: "destructive",
       });
     } finally {
@@ -85,19 +90,14 @@ export function CardPaymentForm({ amount, primaryColor, onSuccess, isDarkTheme =
         {isProcessing ? (
           <>
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Processando...
+            {t.processing}
           </>
         ) : (
           <>
-            Pagar R$ {amount.toFixed(2).replace(".", ",")}
+            {t.payButton} {formattedAmount}
           </>
         )}
       </Button>
-
-      <div className={`flex items-center justify-center gap-2 text-xs ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-        <Shield className="h-4 w-4" />
-        <span>Pagamento seguro processado pelo Stripe</span>
-      </div>
     </form>
   );
 }
