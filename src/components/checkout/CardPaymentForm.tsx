@@ -64,7 +64,7 @@ export function CardPaymentForm({ amount, primaryColor, onSuccess }: CardPayment
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-muted/30 rounded-lg p-4">
+      <div className="bg-muted/30 rounded-xl p-5 border border-border/50">
         <PaymentElement
           options={{
             layout: "tabs",
@@ -75,7 +75,7 @@ export function CardPaymentForm({ amount, primaryColor, onSuccess }: CardPayment
       <Button
         type="submit"
         disabled={!stripe || isProcessing}
-        className="w-full h-12 text-base font-semibold"
+        className="w-full h-14 text-base font-semibold rounded-xl shadow-lg transition-all hover:shadow-xl"
         style={{ backgroundColor: primaryColor }}
       >
         {isProcessing ? (
