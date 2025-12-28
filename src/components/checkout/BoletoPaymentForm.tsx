@@ -16,6 +16,7 @@ interface BoletoPaymentFormProps {
     cpf: string;
   };
   onSuccess: () => void;
+  isDarkTheme?: boolean;
 }
 
 export function BoletoPaymentForm({ 
@@ -23,7 +24,8 @@ export function BoletoPaymentForm({
   amount, 
   primaryColor, 
   customerData,
-  onSuccess 
+  onSuccess,
+  isDarkTheme = false
 }: BoletoPaymentFormProps) {
   const stripe = useStripe();
   const { toast } = useToast();
@@ -121,12 +123,15 @@ export function BoletoPaymentForm({
   if (!boletoData) {
     return (
       <div className="space-y-6">
-        <div className="bg-muted/30 rounded-xl p-6 text-center border border-border/50">
-          <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground mb-2">
+        <div className={`rounded-xl p-6 text-center border ${isDarkTheme 
+          ? 'bg-slate-700/50 border-slate-600' 
+          : 'bg-muted/30 border-border/50'}`}
+        >
+          <FileText className={`h-16 w-16 mx-auto mb-4 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`} />
+          <p className={`text-sm mb-2 ${isDarkTheme ? 'text-slate-300' : 'text-muted-foreground'}`}>
             Clique no botão abaixo para gerar o boleto bancário
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className={`text-xs ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
             O boleto terá vencimento de 3 dias úteis
           </p>
         </div>
@@ -155,17 +160,23 @@ export function BoletoPaymentForm({
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl p-6 text-center border border-green-200 dark:border-green-800">
+      <div className={`rounded-xl p-6 text-center border ${isDarkTheme 
+        ? 'bg-gradient-to-br from-green-950/30 to-emerald-950/30 border-green-800' 
+        : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'}`}
+      >
         <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
-        <h3 className="font-semibold text-lg mb-1">Boleto Gerado!</h3>
-        <p className="text-sm text-muted-foreground mb-4">
+        <h3 className={`font-semibold text-lg mb-1 ${isDarkTheme ? 'text-white' : ''}`}>Boleto Gerado!</h3>
+        <p className={`text-sm mb-4 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
           Vencimento: {boletoData.expiresAt}
         </p>
 
         {boletoData.number && (
-          <div className="bg-background rounded-lg p-4 border border-border mb-4">
-            <p className="text-xs text-muted-foreground mb-2">Linha digitável</p>
-            <p className="text-sm font-mono break-all text-foreground">
+          <div className={`rounded-lg p-4 border mb-4 ${isDarkTheme 
+            ? 'bg-slate-800 border-slate-600' 
+            : 'bg-background border-border'}`}
+          >
+            <p className={`text-xs mb-2 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>Linha digitável</p>
+            <p className={`text-sm font-mono break-all ${isDarkTheme ? 'text-white' : 'text-foreground'}`}>
               {boletoData.number}
             </p>
           </div>
@@ -203,7 +214,7 @@ export function BoletoPaymentForm({
         </div>
       </div>
 
-      <p className="text-xs text-center text-muted-foreground">
+      <p className={`text-xs text-center ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
         Após o pagamento, a confirmação pode levar até 3 dias úteis. Seu ativo será desbloqueado automaticamente.
       </p>
     </div>

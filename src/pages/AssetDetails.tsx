@@ -48,6 +48,7 @@ export default function AssetDetails() {
     checkout_message: '',
     checkout_primary_color: '#10B981',
     checkout_logo_url: '',
+    checkout_theme: 'light' as 'light' | 'dark',
   });
 
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function AssetDetails() {
         checkout_message: assetRes.data.checkout_message || '',
         checkout_primary_color: assetRes.data.checkout_primary_color || '#10B981',
         checkout_logo_url: assetRes.data.checkout_logo_url || '',
+        checkout_theme: (assetRes.data as any).checkout_theme || 'light',
       });
     } catch (error) {
       console.error('Error fetching asset:', error);
@@ -451,6 +453,46 @@ export default function AssetDetails() {
                     })}
                     placeholder="https://exemplo.com/logo.png"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tema do Checkout</Label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutSettings({ 
+                        ...checkoutSettings, 
+                        checkout_theme: 'light' 
+                      })}
+                      className={cn(
+                        "flex-1 p-4 rounded-lg border-2 transition-all",
+                        "flex flex-col items-center gap-2",
+                        checkoutSettings.checkout_theme === 'light' 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <div className="w-12 h-8 bg-white border border-border rounded shadow-sm"></div>
+                      <span className="text-sm font-medium">Light</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutSettings({ 
+                        ...checkoutSettings, 
+                        checkout_theme: 'dark' 
+                      })}
+                      className={cn(
+                        "flex-1 p-4 rounded-lg border-2 transition-all",
+                        "flex flex-col items-center gap-2",
+                        checkoutSettings.checkout_theme === 'dark' 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <div className="w-12 h-8 bg-slate-900 border border-slate-700 rounded shadow-sm"></div>
+                      <span className="text-sm font-medium">Dark</span>
+                    </button>
+                  </div>
                 </div>
 
                 <Button 

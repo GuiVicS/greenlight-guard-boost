@@ -10,9 +10,10 @@ interface CustomerFormProps {
   };
   onChange: (data: { name: string; email: string; cpf: string }) => void;
   primaryColor: string;
+  isDarkTheme?: boolean;
 }
 
-export function CustomerForm({ customerData, onChange, primaryColor }: CustomerFormProps) {
+export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme = false }: CustomerFormProps) {
   const formatCPF = (value: string) => {
     const numbers = value.replace(/\D/g, "");
     if (numbers.length <= 3) return numbers;
@@ -24,7 +25,7 @@ export function CustomerForm({ customerData, onChange, primaryColor }: CustomerF
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
+        <Label htmlFor="name" className={`text-sm font-medium flex items-center gap-2 ${isDarkTheme ? 'text-slate-300' : ''}`}>
           <User className="h-4 w-4" style={{ color: primaryColor }} />
           Nome completo
         </Label>
@@ -34,15 +35,17 @@ export function CustomerForm({ customerData, onChange, primaryColor }: CustomerF
           placeholder="ex: Maria de Almeida Cruz"
           value={customerData.name}
           onChange={(e) => onChange({ ...customerData, name: e.target.value })}
-          className="h-12 rounded-xl border-border/50 focus:border-primary transition-colors"
+          className={`h-12 rounded-xl transition-colors ${isDarkTheme 
+            ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary' 
+            : 'border-border/50 focus:border-primary'}`}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+        <Label htmlFor="email" className={`text-sm font-medium flex items-center gap-2 ${isDarkTheme ? 'text-slate-300' : ''}`}>
           <Mail className="h-4 w-4" style={{ color: primaryColor }} />
           E-mail
-          <span className="text-xs text-muted-foreground font-normal">(Para envio do comprovante)</span>
+          <span className={`text-xs font-normal ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>(Para envio do comprovante)</span>
         </Label>
         <Input
           id="email"
@@ -50,12 +53,14 @@ export function CustomerForm({ customerData, onChange, primaryColor }: CustomerF
           placeholder="ex: maria@gmail.com"
           value={customerData.email}
           onChange={(e) => onChange({ ...customerData, email: e.target.value })}
-          className="h-12 rounded-xl border-border/50 focus:border-primary transition-colors"
+          className={`h-12 rounded-xl transition-colors ${isDarkTheme 
+            ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary' 
+            : 'border-border/50 focus:border-primary'}`}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="cpf" className="text-sm font-medium flex items-center gap-2">
+        <Label htmlFor="cpf" className={`text-sm font-medium flex items-center gap-2 ${isDarkTheme ? 'text-slate-300' : ''}`}>
           <CreditCard className="h-4 w-4" style={{ color: primaryColor }} />
           CPF
         </Label>
@@ -66,7 +71,9 @@ export function CustomerForm({ customerData, onChange, primaryColor }: CustomerF
           value={customerData.cpf}
           onChange={(e) => onChange({ ...customerData, cpf: formatCPF(e.target.value) })}
           maxLength={14}
-          className="h-12 rounded-xl border-border/50 focus:border-primary transition-colors"
+          className={`h-12 rounded-xl transition-colors ${isDarkTheme 
+            ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary' 
+            : 'border-border/50 focus:border-primary'}`}
         />
       </div>
     </div>

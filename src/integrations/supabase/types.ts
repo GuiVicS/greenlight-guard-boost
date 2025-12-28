@@ -58,6 +58,7 @@ export type Database = {
           checkout_logo_url: string | null
           checkout_message: string | null
           checkout_primary_color: string | null
+          checkout_theme: string | null
           client_id: string
           created_at: string
           id: string
@@ -72,6 +73,7 @@ export type Database = {
           checkout_logo_url?: string | null
           checkout_message?: string | null
           checkout_primary_color?: string | null
+          checkout_theme?: string | null
           client_id: string
           created_at?: string
           id?: string
@@ -86,6 +88,7 @@ export type Database = {
           checkout_logo_url?: string | null
           checkout_message?: string | null
           checkout_primary_color?: string | null
+          checkout_theme?: string | null
           client_id?: string
           created_at?: string
           id?: string
