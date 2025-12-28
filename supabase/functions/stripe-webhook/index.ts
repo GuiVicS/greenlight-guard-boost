@@ -45,6 +45,79 @@ Deno.serve(async (req) => {
     console.log("Received Stripe event:", event.type);
 
     switch (event.type) {
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object;
+        const subscriptionId = paymentIntent.metadata?.subscription_id;
+        const paymentId = paymentIntent.metadata?.payment_id;
+        const assetId = paymentIntent.metadata?.asset_id;
+
+        console.log("PaymentIntent succeeded:", paymentIntent.id, { subscriptionId, paymentId, assetId });
+
+        if (paymentId) {
+          // Update payment status to completed
+          const { error: paymentError } = await supabase
+            .from("payments")
+            .update({
+              status: "completed",
+              paid_at: new Date().toISOString(),
+              stripe_payment_intent_id: paymentIntent.id,
+            })
+            .eq("id", paymentId);
+          
+          if (paymentError) {
+            console.error("Error updating payment:", paymentError);
+          } else {
+            console.log("Payment updated to completed:", paymentId);
+          }
+        }
+
+        if (subscriptionId) {
+          // Update subscription status to active
+          const { error: subError } = await supabase
+            .from("subscriptions")
+            .update({
+              status: "active",
+              stripe_customer_id: paymentIntent.customer,
+            })
+            .eq("id", subscriptionId);
+
+          if (subError) {
+            console.error("Error updating subscription:", subError);
+          } else {
+            console.log("Subscription updated to active:", subscriptionId);
+          }
+        }
+
+        // Unblock the asset
+        if (assetId) {
+          const { error: assetError } = await supabase
+            .from("assets")
+            .update({
+              status: "active",
+              block_reason: null,
+            })
+            .eq("id", assetId);
+
+          if (assetError) {
+            console.error("Error unblocking asset:", assetError);
+          } else {
+            console.log("Asset unblocked:", assetId);
+          }
+
+          // Log the unblock
+          await supabase.from("access_logs").insert({
+            asset_id: assetId,
+            action: "payment_completed",
+            details: {
+              payment_intent: paymentIntent.id,
+              amount: paymentIntent.amount,
+              payment_method: paymentIntent.payment_method_types?.[0] || "unknown",
+            },
+          });
+        }
+        break;
+      }
+
       case "checkout.session.completed": {
         const session = event.data.object;
         const subscriptionId = session.metadata?.subscription_id;
