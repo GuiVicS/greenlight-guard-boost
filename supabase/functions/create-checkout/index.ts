@@ -97,8 +97,8 @@ Deno.serve(async (req) => {
       body: new URLSearchParams({
         "payment_method_types[0]": paymentMethod === "pix" ? "pix" : "card",
         "mode": "payment",
-        "success_url": successUrl || `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        "cancel_url": cancelUrl || `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/checkout/${subscription.asset?.id}`,
+        "success_url": successUrl,
+        "cancel_url": cancelUrl,
         "line_items[0][price_data][currency]": "brl",
         "line_items[0][price_data][product_data][name]": `${subscription.plan_name} - ${subscription.asset?.name}`,
         "line_items[0][price_data][unit_amount]": String(Math.round(subscription.monthly_value * 100)),
