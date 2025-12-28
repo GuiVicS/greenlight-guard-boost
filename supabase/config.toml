@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.check-overdue]
 verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = false
