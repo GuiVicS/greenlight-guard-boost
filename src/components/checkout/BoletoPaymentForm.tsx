@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, FileText, Copy, CheckCircle, ExternalLink } from "lucide-react";
+import { Loader2, Shield, FileText, Copy, CheckCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency, getTranslations } from "@/lib/checkout-utils";
 
 interface BoletoPaymentFormProps {
   clientSecret: string;
@@ -13,7 +12,7 @@ interface BoletoPaymentFormProps {
   customerData: {
     name: string;
     email: string;
-    cpf: string;
+    document: string;
   };
   onSuccess: () => void;
   isDarkTheme?: boolean;
@@ -23,9 +22,9 @@ export function BoletoPaymentForm({
   clientSecret, 
   amount, 
   primaryColor, 
-  customerData,
+  customerData, 
   onSuccess,
-  isDarkTheme = false
+  isDarkTheme = false 
 }: BoletoPaymentFormProps) {
   const stripe = useStripe();
   const { toast } = useToast();
@@ -36,12 +35,15 @@ export function BoletoPaymentForm({
     expiresAt: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  
+  const t = getTranslations('BR');
+  const formattedAmount = formatCurrency(amount, 'BR');
 
   const generateBoleto = async () => {
-    if (!stripe || !customerData.name || !customerData.email || !customerData.cpf) {
+    if (!stripe || !customerData.name || !customerData.email || !customerData.document) {
       toast({
         title: "Dados incompletos",
-        description: "Preencha todos os campos de identificação",
+        description: "Preencha todos os campos de identificação (nome, e-mail e CPF)",
         variant: "destructive",
       });
       return;
@@ -56,15 +58,11 @@ export function BoletoPaymentForm({
             name: customerData.name,
             email: customerData.email,
             address: {
-              line1: "N/A",
-              city: "São Paulo",
-              state: "SP",
-              postal_code: "01310100",
               country: "BR",
             },
           },
           boleto: {
-            tax_id: customerData.cpf.replace(/\D/g, ""),
+            tax_id: customerData.document.replace(/\D/g, ""),
           },
         },
       });
@@ -138,7 +136,7 @@ export function BoletoPaymentForm({
 
         <Button
           onClick={generateBoleto}
-          disabled={!stripe || isProcessing || !customerData.name || !customerData.email || !customerData.cpf}
+          disabled={!stripe || isProcessing || !customerData.name || !customerData.email || !customerData.document}
           className="w-full h-14 text-base font-semibold rounded-xl shadow-lg transition-all hover:shadow-xl"
           style={{ backgroundColor: primaryColor }}
         >
@@ -150,10 +148,15 @@ export function BoletoPaymentForm({
           ) : (
             <>
               <FileText className="h-5 w-5 mr-2" />
-              Gerar Boleto - R$ {amount.toFixed(2).replace(".", ",")}
+              Gerar Boleto - {formattedAmount}
             </>
           )}
         </Button>
+
+        <div className={`flex items-center justify-center gap-2 text-xs ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+          <Shield className="h-4 w-4" />
+          <span>{t.securePayment}</span>
+        </div>
       </div>
     );
   }

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CardPaymentForm } from "@/components/checkout/CardPaymentForm";
 import { BoletoPaymentForm } from "@/components/checkout/BoletoPaymentForm";
 import { CustomerForm } from "@/components/checkout/CustomerForm";
+import { formatCurrency, getTranslations, getCountryConfig } from "@/lib/checkout-utils";
 
 interface SubscriptionData {
   id: string;
@@ -56,7 +57,7 @@ export default function Checkout() {
   const [customerData, setCustomerData] = useState({
     name: "",
     email: "",
-    cpf: "",
+    document: "",
   });
 
   useEffect(() => {
@@ -177,6 +178,9 @@ export default function Checkout() {
     );
   }
 
+  const country = subscription?.country || 'BR';
+  const t = getTranslations(country);
+
   if (!subscription) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
@@ -185,9 +189,9 @@ export default function Checkout() {
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-10 w-10 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold mb-3">Tudo certo!</h2>
+            <h2 className="text-2xl font-bold mb-3">{t.allGood}</h2>
             <p className="text-muted-foreground">
-              Este ativo não possui pagamentos pendentes.
+              {t.allGoodDescription}
             </p>
           </CardContent>
         </Card>
@@ -203,9 +207,9 @@ export default function Checkout() {
             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-10 w-10 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold mb-3">Pagamento confirmado!</h2>
+            <h2 className="text-2xl font-bold mb-3">{t.allGood}</h2>
             <p className="text-muted-foreground mb-6">
-              Seu pagamento foi processado com sucesso. Seu ativo será desbloqueado automaticamente.
+              {t.attentionBanner}
             </p>
           </CardContent>
         </Card>
@@ -215,9 +219,9 @@ export default function Checkout() {
 
   const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
   const isDarkTheme = subscription.asset.checkout_theme === 'dark';
-  const country = subscription.country || 'BR';
   const locale = countryLocaleMap[country] || 'pt-BR';
   const showBoleto = boletoCountries.includes(country);
+  const formattedAmount = formatCurrency(subscription.monthly_value, country);
 
   return (
     <div className={`min-h-screen ${isDarkTheme 
@@ -238,7 +242,7 @@ export default function Checkout() {
           )}
           <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
             <Lock className="h-4 w-4" />
-            <span className="hidden sm:inline">PAGAMENTO 100% SEGURO</span>
+            <span className="hidden sm:inline">{t.securePayment.toUpperCase()}</span>
           </div>
         </div>
       </header>
@@ -248,7 +252,7 @@ export default function Checkout() {
         className="w-full py-3 text-center text-sm font-medium text-white shadow-md"
         style={{ backgroundColor: primaryColor }}
       >
-        ATENÇÃO! APÓS A COMPRA, SEU ATIVO SERÁ DESBLOQUEADO AUTOMATICAMENTE.
+        {t.attentionBanner}
       </div>
 
       <div className="container max-w-6xl mx-auto p-4 py-8">
@@ -269,9 +273,11 @@ export default function Checkout() {
                     1
                   </div>
                   <div>
-                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>Identificação</CardTitle>
+                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>{t.customerInfo}</CardTitle>
                     <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                      Utilizaremos seu e-mail para identificar seu perfil e enviar o comprovante.
+                      {country === 'BR' 
+                        ? 'Utilizaremos seu e-mail para identificar seu perfil e enviar o comprovante.'
+                        : 'We will use your email to identify your profile and send the receipt.'}
                     </p>
                   </div>
                 </div>
@@ -283,6 +289,7 @@ export default function Checkout() {
                   onChange={setCustomerData}
                   primaryColor={primaryColor}
                   isDarkTheme={isDarkTheme}
+                  country={country}
                 />
               </CardContent>
             </Card>
@@ -301,9 +308,9 @@ export default function Checkout() {
                     2
                   </div>
                   <div>
-                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>Pagamento</CardTitle>
+                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>{t.paymentTitle}</CardTitle>
                     <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                      Escolha a forma de pagamento para continuar.
+                      {t.selectPaymentMethod}
                     </p>
                   </div>
                 </div>
@@ -317,7 +324,7 @@ export default function Checkout() {
                       className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
                     >
                       <CreditCard className="h-5 w-5" />
-                      <span className="font-medium">{country === 'BR' ? 'Cartão' : 'Card'}</span>
+                      <span className="font-medium">{t.creditCard}</span>
                     </TabsTrigger>
                     {showBoleto && (
                       <TabsTrigger 
@@ -325,7 +332,7 @@ export default function Checkout() {
                         className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
                       >
                         <FileText className="h-5 w-5" />
-                        <span className="font-medium">Boleto</span>
+                        <span className="font-medium">{t.boleto}</span>
                       </TabsTrigger>
                     )}
                   </TabsList>
@@ -334,7 +341,7 @@ export default function Checkout() {
                     <div className="flex items-center justify-center py-16">
                       <div className="text-center">
                         <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" style={{ color: primaryColor }} />
-                        <p className="text-muted-foreground">Preparando pagamento...</p>
+                        <p className="text-muted-foreground">{t.processing}</p>
                       </div>
                     </div>
                   ) : stripePromise && clientSecret ? (
@@ -342,7 +349,7 @@ export default function Checkout() {
                       stripe={stripePromise} 
                       options={{ 
                         clientSecret,
-                    appearance: {
+                        appearance: {
                           theme: isDarkTheme ? "night" : "stripe",
                           variables: {
                             colorPrimary: primaryColor,
@@ -377,6 +384,7 @@ export default function Checkout() {
                           primaryColor={primaryColor}
                           onSuccess={handlePaymentSuccess}
                           isDarkTheme={isDarkTheme}
+                          country={country}
                         />
                       </TabsContent>
                       <TabsContent value="boleto" className="mt-0">
@@ -392,7 +400,9 @@ export default function Checkout() {
                     </Elements>
                   ) : (
                     <div className={`text-center py-12 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                      Erro ao carregar formulário de pagamento. Tente novamente.
+                      {country === 'BR' 
+                        ? 'Erro ao carregar formulário de pagamento. Tente novamente.'
+                        : 'Error loading payment form. Please try again.'}
                     </div>
                   )}
                 </Tabs>
@@ -404,7 +414,7 @@ export default function Checkout() {
           <div className="lg:col-span-2 space-y-6">
             <Card className={`shadow-lg border-0 sticky top-4 ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
               <CardHeader className="pb-4">
-                <CardTitle className={`text-lg font-bold tracking-wide ${isDarkTheme ? 'text-white' : ''}`}>RESUMO</CardTitle>
+                <CardTitle className={`text-lg font-bold tracking-wide ${isDarkTheme ? 'text-white' : ''}`}>{t.orderSummary.toUpperCase()}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Product Info */}
@@ -419,7 +429,7 @@ export default function Checkout() {
                     <h4 className={`font-semibold truncate ${isDarkTheme ? 'text-white' : ''}`}>{subscription.asset.name}</h4>
                     <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>{subscription.plan_name}</p>
                     <p className="text-sm font-medium mt-1" style={{ color: primaryColor }}>
-                      R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}
+                      {formattedAmount}
                     </p>
                   </div>
                 </div>
@@ -427,21 +437,18 @@ export default function Checkout() {
                 <div className={`border-t pt-4 space-y-3 ${isDarkTheme ? 'border-slate-600' : 'border-border'}`}>
                   <div className="flex justify-between text-sm">
                     <span className={isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}>Subtotal</span>
-                    <span className={`font-medium ${isDarkTheme ? 'text-white' : ''}`}>R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}</span>
+                    <span className={`font-medium ${isDarkTheme ? 'text-white' : ''}`}>{formattedAmount}</span>
                   </div>
                   
                   <div className={`flex justify-between items-baseline pt-3 border-t ${isDarkTheme ? 'border-slate-600' : 'border-border'}`}>
-                    <span className={`font-semibold ${isDarkTheme ? 'text-white' : ''}`}>Total</span>
+                    <span className={`font-semibold ${isDarkTheme ? 'text-white' : ''}`}>{t.total}</span>
                     <div className="text-right">
                       <span 
                         className="text-3xl font-bold"
                         style={{ color: primaryColor }}
                       >
-                        R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}
+                        {formattedAmount}
                       </span>
-                      <p className={`text-xs mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                        em até 12x no cartão
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -449,7 +456,7 @@ export default function Checkout() {
                 {/* Security Badge */}
                 <div className={`flex items-center justify-center gap-2 text-xs rounded-xl p-4 mt-4 ${isDarkTheme ? 'text-slate-400 bg-slate-700/50' : 'text-muted-foreground bg-muted/30'}`}>
                   <Shield className="h-5 w-5" style={{ color: primaryColor }} />
-                  <span>Pagamento seguro processado pelo Stripe</span>
+                  <span>{t.securePayment}</span>
                 </div>
               </CardContent>
             </Card>
