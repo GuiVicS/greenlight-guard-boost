@@ -15,6 +15,7 @@ interface SubscriptionData {
   id: string;
   plan_name: string;
   monthly_value: number;
+  country: string;
   asset: {
     id: string;
     name: string;
@@ -28,6 +29,18 @@ interface SubscriptionData {
     };
   };
 }
+
+// Country to locale mapping
+const countryLocaleMap: Record<string, 'pt-BR' | 'en' | 'es' | 'pt'> = {
+  BR: 'pt-BR',
+  US: 'en',
+  PT: 'pt',
+  ES: 'es',
+  MX: 'es',
+};
+
+// Countries that support boleto
+const boletoCountries = ['BR'];
 
 export default function Checkout() {
   const { assetId } = useParams();
@@ -60,6 +73,7 @@ export default function Checkout() {
           id,
           plan_name,
           monthly_value,
+          country,
           asset:assets!inner (
             id,
             name,
@@ -201,6 +215,9 @@ export default function Checkout() {
 
   const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
   const isDarkTheme = subscription.asset.checkout_theme === 'dark';
+  const country = subscription.country || 'BR';
+  const locale = countryLocaleMap[country] || 'pt-BR';
+  const showBoleto = boletoCountries.includes(country);
 
   return (
     <div className={`min-h-screen ${isDarkTheme 
@@ -294,21 +311,23 @@ export default function Checkout() {
 
               <CardContent className="pt-6">
                 <Tabs value={paymentMethod} onValueChange={handleTabChange}>
-                  <TabsList className={`grid w-full grid-cols-2 mb-6 h-14 p-1 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/50'}`}>
+                  <TabsList className={`grid w-full ${showBoleto ? 'grid-cols-2' : 'grid-cols-1'} mb-6 h-14 p-1 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/50'}`}>
                     <TabsTrigger 
                       value="card" 
                       className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
                     >
                       <CreditCard className="h-5 w-5" />
-                      <span className="font-medium">Cartão</span>
+                      <span className="font-medium">{country === 'BR' ? 'Cartão' : 'Card'}</span>
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="boleto" 
-                      className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
-                    >
-                      <FileText className="h-5 w-5" />
-                      <span className="font-medium">Boleto</span>
-                    </TabsTrigger>
+                    {showBoleto && (
+                      <TabsTrigger 
+                        value="boleto" 
+                        className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
+                      >
+                        <FileText className="h-5 w-5" />
+                        <span className="font-medium">Boleto</span>
+                      </TabsTrigger>
+                    )}
                   </TabsList>
 
                   {creatingIntent ? (
@@ -349,7 +368,7 @@ export default function Checkout() {
                             },
                           },
                         },
-                        locale: "pt-BR",
+                        locale: locale,
                       }}
                     >
                       <TabsContent value="card" className="mt-0">

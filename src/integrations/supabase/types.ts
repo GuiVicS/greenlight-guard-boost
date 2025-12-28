@@ -52,6 +52,27 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          checkout_base_url: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          checkout_base_url?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          checkout_base_url?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           block_reason: string | null
@@ -239,6 +260,7 @@ export type Database = {
       subscriptions: {
         Row: {
           asset_id: string
+          country: string
           created_at: string
           due_date: string
           id: string
@@ -251,6 +273,7 @@ export type Database = {
         }
         Insert: {
           asset_id: string
+          country?: string
           created_at?: string
           due_date: string
           id?: string
@@ -263,6 +286,7 @@ export type Database = {
         }
         Update: {
           asset_id?: string
+          country?: string
           created_at?: string
           due_date?: string
           id?: string

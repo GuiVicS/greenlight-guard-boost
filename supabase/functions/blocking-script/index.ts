@@ -61,12 +61,65 @@ Deno.serve(async (req) => {
       );
     }
 
-    // If blocked, return overlay script
+    // Get app settings for checkout URL
+    const { data: appSettings } = await supabase
+      .from("app_settings")
+      .select("checkout_base_url")
+      .single();
+
+    // Get subscription to find the correct checkout URL
+    const { data: subscription } = await supabase
+      .from("subscriptions")
+      .select("id, country")
+      .eq("asset_id", asset.id)
+      .eq("status", "overdue")
+      .single();
+
+    // Build checkout URL
+    let checkoutUrl = "#";
+    if (appSettings?.checkout_base_url && subscription) {
+      const baseUrl = appSettings.checkout_base_url.replace(/\/$/, ""); // Remove trailing slash
+      checkoutUrl = `${baseUrl}/checkout/${asset.id}`;
+    }
+
     const primaryColor = asset.checkout_primary_color || "#dc2626";
     const logoUrl = asset.checkout_logo_url || "";
-    const message = asset.checkout_message || asset.block_reason || "Este site está temporariamente bloqueado devido a pendências financeiras.";
-    const baseUrl = supabaseUrl.replace('.supabase.co', '.lovable.app');
-    const checkoutUrl = baseUrl + "/checkout/" + asset.id;
+    
+    // Priority: block_reason first (for manual blocks), then checkout_message, then default
+    const message = asset.block_reason || asset.checkout_message || "Este site está temporariamente bloqueado devido a pendências financeiras.";
+
+    // Determine language based on subscription country
+    const country = subscription?.country || "BR";
+    const translations: Record<string, { title: string; buttonText: string; defaultMessage: string }> = {
+      BR: {
+        title: "Site Bloqueado",
+        buttonText: "Regularizar Pagamento",
+        defaultMessage: "Este site está temporariamente bloqueado devido a pendências financeiras."
+      },
+      PT: {
+        title: "Site Bloqueado",
+        buttonText: "Regularizar Pagamento",
+        defaultMessage: "Este site está temporariamente bloqueado devido a pendências financeiras."
+      },
+      US: {
+        title: "Site Blocked",
+        buttonText: "Make Payment",
+        defaultMessage: "This site is temporarily blocked due to pending payments."
+      },
+      ES: {
+        title: "Sitio Bloqueado",
+        buttonText: "Regularizar Pago",
+        defaultMessage: "Este sitio está temporalmente bloqueado debido a pagos pendientes."
+      },
+      MX: {
+        title: "Sitio Bloqueado",
+        buttonText: "Regularizar Pago",
+        defaultMessage: "Este sitio está temporalmente bloqueado debido a pagos pendientes."
+      }
+    };
+
+    const t = translations[country] || translations.BR;
+    const displayMessage = asset.block_reason || asset.checkout_message || t.defaultMessage;
 
     const logoHtml = logoUrl ? '<img src="' + logoUrl + '" alt="Logo" style="max-height: 60px; margin-bottom: 24px;" />' : '';
 
@@ -76,7 +129,7 @@ Deno.serve(async (req) => {
   
   var overlay = document.createElement('div');
   overlay.id = 'asset-block-overlay';
-  overlay.innerHTML = '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 2147483647; display: flex; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;"><div style="background: #1a1a1a; border-radius: 16px; padding: 48px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #333;">${logoHtml}<div style="width: 64px; height: 64px; background: ${primaryColor}20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${primaryColor}" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 16px;">Site Bloqueado</h1><p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 32px;">${message}</p><a href="${checkoutUrl}" style="display: inline-block; background: ${primaryColor}; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Regularizar Pagamento</a></div></div>';
+  overlay.innerHTML = '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 2147483647; display: flex; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;"><div style="background: #1a1a1a; border-radius: 16px; padding: 48px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #333;">${logoHtml}<div style="width: 64px; height: 64px; background: ${primaryColor}20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${primaryColor}" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 16px;">${t.title}</h1><p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 32px;">${displayMessage}</p><a href="${checkoutUrl}" style="display: inline-block; background: ${primaryColor}; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">${t.buttonText}</a></div></div>';
   
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
