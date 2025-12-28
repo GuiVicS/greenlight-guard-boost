@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     const amountInCents = Math.round(subscription.monthly_value * 100);
 
     // Build payment method types
-    const paymentMethodTypes = paymentMethod === "pix" ? "pix" : "card";
+    const paymentMethodTypes = paymentMethod === "boleto" ? "boleto" : "card";
 
     // Create PaymentIntent
     const params = new URLSearchParams({
