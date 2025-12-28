@@ -12,9 +12,10 @@ interface CardPaymentFormProps {
   amount: number;
   primaryColor: string;
   onSuccess: () => void;
+  isDarkTheme?: boolean;
 }
 
-export function CardPaymentForm({ amount, primaryColor, onSuccess }: CardPaymentFormProps) {
+export function CardPaymentForm({ amount, primaryColor, onSuccess, isDarkTheme = false }: CardPaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -64,7 +65,10 @@ export function CardPaymentForm({ amount, primaryColor, onSuccess }: CardPayment
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-muted/30 rounded-xl p-5 border border-border/50">
+      <div className={`rounded-xl p-5 border ${isDarkTheme 
+        ? 'bg-slate-700/50 border-slate-600' 
+        : 'bg-muted/30 border-border/50'}`}
+      >
         <PaymentElement
           options={{
             layout: "tabs",
@@ -90,7 +94,7 @@ export function CardPaymentForm({ amount, primaryColor, onSuccess }: CardPayment
         )}
       </Button>
 
-      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+      <div className={`flex items-center justify-center gap-2 text-xs ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
         <Shield className="h-4 w-4" />
         <span>Pagamento seguro processado pelo Stripe</span>
       </div>

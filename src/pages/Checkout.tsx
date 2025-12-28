@@ -21,6 +21,7 @@ interface SubscriptionData {
     checkout_logo_url: string | null;
     checkout_message: string | null;
     checkout_primary_color: string | null;
+    checkout_theme: 'light' | 'dark' | null;
     client: {
       name: string;
       email: string;
@@ -65,6 +66,7 @@ export default function Checkout() {
             checkout_logo_url,
             checkout_message,
             checkout_primary_color,
+            checkout_theme,
             client:clients (
               name,
               email
@@ -198,11 +200,15 @@ export default function Checkout() {
   }
 
   const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
+  const isDarkTheme = subscription.asset.checkout_theme === 'dark';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className={`min-h-screen ${isDarkTheme 
+      ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' 
+      : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}
+    >
       {/* Top Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-border/50 py-4 px-4 shadow-sm">
+      <header className={`border-b border-border/50 py-4 px-4 shadow-sm ${isDarkTheme ? 'bg-slate-900' : 'bg-white'}`}>
         <div className="container max-w-6xl mx-auto flex items-center justify-between">
           {subscription.asset.checkout_logo_url ? (
             <img 
@@ -211,9 +217,9 @@ export default function Checkout() {
               className="max-h-10 object-contain"
             />
           ) : (
-            <div className="font-bold text-xl">{subscription.asset.name}</div>
+            <div className={`font-bold text-xl ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{subscription.asset.name}</div>
           )}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
             <Lock className="h-4 w-4" />
             <span className="hidden sm:inline">PAGAMENTO 100% SEGURO</span>
           </div>
@@ -233,8 +239,11 @@ export default function Checkout() {
           {/* Left Column - Forms */}
           <div className="lg:col-span-3 space-y-6">
             {/* Identification Section */}
-            <Card className="shadow-lg border-0 overflow-hidden">
-              <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+            <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
+              <CardHeader className={`pb-4 ${isDarkTheme 
+                ? 'bg-gradient-to-r from-slate-800 to-slate-700' 
+                : 'bg-gradient-to-r from-slate-50 to-white'}`}
+              >
                 <div className="flex items-center gap-4">
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-md"
@@ -243,8 +252,8 @@ export default function Checkout() {
                     1
                   </div>
                   <div>
-                    <CardTitle className="text-xl">Identificação</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>Identificação</CardTitle>
+                    <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
                       Utilizaremos seu e-mail para identificar seu perfil e enviar o comprovante.
                     </p>
                   </div>
@@ -256,13 +265,17 @@ export default function Checkout() {
                   customerData={customerData}
                   onChange={setCustomerData}
                   primaryColor={primaryColor}
+                  isDarkTheme={isDarkTheme}
                 />
               </CardContent>
             </Card>
 
             {/* Payment Section */}
-            <Card className="shadow-lg border-0 overflow-hidden">
-              <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+            <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
+              <CardHeader className={`pb-4 ${isDarkTheme 
+                ? 'bg-gradient-to-r from-slate-800 to-slate-700' 
+                : 'bg-gradient-to-r from-slate-50 to-white'}`}
+              >
                 <div className="flex items-center gap-4">
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-md"
@@ -271,8 +284,8 @@ export default function Checkout() {
                     2
                   </div>
                   <div>
-                    <CardTitle className="text-xl">Pagamento</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>Pagamento</CardTitle>
+                    <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
                       Escolha a forma de pagamento para continuar.
                     </p>
                   </div>
@@ -281,17 +294,17 @@ export default function Checkout() {
 
               <CardContent className="pt-6">
                 <Tabs value={paymentMethod} onValueChange={handleTabChange}>
-                  <TabsList className="grid w-full grid-cols-2 mb-6 h-14 p-1 bg-muted/50 rounded-xl">
+                  <TabsList className={`grid w-full grid-cols-2 mb-6 h-14 p-1 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/50'}`}>
                     <TabsTrigger 
                       value="card" 
-                      className="flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all"
+                      className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
                     >
                       <CreditCard className="h-5 w-5" />
                       <span className="font-medium">Cartão</span>
                     </TabsTrigger>
                     <TabsTrigger 
                       value="boleto" 
-                      className="flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all"
+                      className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
                     >
                       <FileText className="h-5 w-5" />
                       <span className="font-medium">Boleto</span>
@@ -310,22 +323,29 @@ export default function Checkout() {
                       stripe={stripePromise} 
                       options={{ 
                         clientSecret,
-                        appearance: {
-                          theme: "stripe",
+                    appearance: {
+                          theme: isDarkTheme ? "night" : "stripe",
                           variables: {
                             colorPrimary: primaryColor,
                             borderRadius: "12px",
                             fontFamily: "system-ui, sans-serif",
+                            colorBackground: isDarkTheme ? "#1e293b" : "#ffffff",
+                            colorText: isDarkTheme ? "#ffffff" : "#1e293b",
                           },
                           rules: {
                             ".Input": {
-                              border: "1px solid #e2e8f0",
+                              border: isDarkTheme ? "1px solid #475569" : "1px solid #e2e8f0",
                               boxShadow: "none",
                               padding: "12px 16px",
+                              backgroundColor: isDarkTheme ? "#334155" : "#ffffff",
+                              color: isDarkTheme ? "#ffffff" : "#1e293b",
                             },
                             ".Input:focus": {
                               border: `2px solid ${primaryColor}`,
                               boxShadow: "none",
+                            },
+                            ".Label": {
+                              color: isDarkTheme ? "#cbd5e1" : "#64748b",
                             },
                           },
                         },
@@ -337,6 +357,7 @@ export default function Checkout() {
                           amount={subscription.monthly_value}
                           primaryColor={primaryColor}
                           onSuccess={handlePaymentSuccess}
+                          isDarkTheme={isDarkTheme}
                         />
                       </TabsContent>
                       <TabsContent value="boleto" className="mt-0">
@@ -346,11 +367,12 @@ export default function Checkout() {
                           primaryColor={primaryColor}
                           customerData={customerData}
                           onSuccess={handlePaymentSuccess}
+                          isDarkTheme={isDarkTheme}
                         />
                       </TabsContent>
                     </Elements>
                   ) : (
-                    <div className="text-center py-12 text-muted-foreground">
+                    <div className={`text-center py-12 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
                       Erro ao carregar formulário de pagamento. Tente novamente.
                     </div>
                   )}
@@ -361,13 +383,13 @@ export default function Checkout() {
 
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="shadow-lg border-0 sticky top-4">
+            <Card className={`shadow-lg border-0 sticky top-4 ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold tracking-wide">RESUMO</CardTitle>
+                <CardTitle className={`text-lg font-bold tracking-wide ${isDarkTheme ? 'text-white' : ''}`}>RESUMO</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Product Info */}
-                <div className="flex gap-4 p-4 bg-muted/30 rounded-xl">
+                <div className={`flex gap-4 p-4 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/30'}`}>
                   <div 
                     className="w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-md shrink-0"
                     style={{ backgroundColor: primaryColor }}
@@ -375,22 +397,22 @@ export default function Checkout() {
                     {subscription.asset.name.charAt(0)}
                   </div>
                   <div className="min-w-0">
-                    <h4 className="font-semibold truncate">{subscription.asset.name}</h4>
-                    <p className="text-sm text-muted-foreground">{subscription.plan_name}</p>
+                    <h4 className={`font-semibold truncate ${isDarkTheme ? 'text-white' : ''}`}>{subscription.asset.name}</h4>
+                    <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>{subscription.plan_name}</p>
                     <p className="text-sm font-medium mt-1" style={{ color: primaryColor }}>
                       R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}
                     </p>
                   </div>
                 </div>
 
-                <div className="border-t border-border pt-4 space-y-3">
+                <div className={`border-t pt-4 space-y-3 ${isDarkTheme ? 'border-slate-600' : 'border-border'}`}>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}</span>
+                    <span className={isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}>Subtotal</span>
+                    <span className={`font-medium ${isDarkTheme ? 'text-white' : ''}`}>R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}</span>
                   </div>
                   
-                  <div className="flex justify-between items-baseline pt-3 border-t border-border">
-                    <span className="font-semibold">Total</span>
+                  <div className={`flex justify-between items-baseline pt-3 border-t ${isDarkTheme ? 'border-slate-600' : 'border-border'}`}>
+                    <span className={`font-semibold ${isDarkTheme ? 'text-white' : ''}`}>Total</span>
                     <div className="text-right">
                       <span 
                         className="text-3xl font-bold"
@@ -398,7 +420,7 @@ export default function Checkout() {
                       >
                         R$ {subscription.monthly_value.toFixed(2).replace(".", ",")}
                       </span>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className={`text-xs mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
                         em até 12x no cartão
                       </p>
                     </div>
@@ -406,7 +428,7 @@ export default function Checkout() {
                 </div>
 
                 {/* Security Badge */}
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl p-4 mt-4">
+                <div className={`flex items-center justify-center gap-2 text-xs rounded-xl p-4 mt-4 ${isDarkTheme ? 'text-slate-400 bg-slate-700/50' : 'text-muted-foreground bg-muted/30'}`}>
                   <Shield className="h-5 w-5" style={{ color: primaryColor }} />
                   <span>Pagamento seguro processado pelo Stripe</span>
                 </div>
@@ -414,9 +436,9 @@ export default function Checkout() {
             </Card>
 
             {subscription.asset.checkout_message && (
-              <Card className="shadow-lg border-0">
+              <Card className={`shadow-lg border-0 ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
                 <CardContent className="pt-6">
-                  <p className="text-sm text-muted-foreground text-center italic">
+                  <p className={`text-sm text-center italic ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
                     "{subscription.asset.checkout_message}"
                   </p>
                 </CardContent>
