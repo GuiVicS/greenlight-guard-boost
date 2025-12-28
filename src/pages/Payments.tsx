@@ -3,6 +3,8 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Search, 
   Receipt, 
@@ -13,8 +15,15 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -32,15 +41,55 @@ type Payment = Tables<'payments'> & {
   } | null;
 };
 
+type Subscription = {
+  id: string;
+  plan_name: string;
+  monthly_value: number;
+  assets?: { name: string; clients?: { name: string } | null } | null;
+};
+
 export default function Payments() {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    subscription_id: '',
+    amount: '',
+    payment_method: 'pix' as 'pix' | 'card',
+    status: 'completed' as 'pending' | 'completed',
+  });
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchPayments();
+    fetchSubscriptions();
   }, []);
+
+  async function fetchSubscriptions() {
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select(`
+          id,
+          plan_name,
+          monthly_value,
+          assets (
+            name,
+            clients (name)
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSubscriptions(data || []);
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+    }
+  }
 
   async function fetchPayments() {
     try {
@@ -78,6 +127,69 @@ export default function Payments() {
     
     return matchesSearch && matchesStatus;
   });
+
+  const handleCreatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const subscription = subscriptions.find(s => s.id === formData.subscription_id);
+      if (!subscription) throw new Error('Assinatura não encontrada');
+
+      const paymentData = {
+        subscription_id: formData.subscription_id,
+        amount: parseFloat(formData.amount) || subscription.monthly_value,
+        payment_method: formData.payment_method,
+        status: formData.status,
+        paid_at: formData.status === 'completed' ? new Date().toISOString() : null,
+      };
+
+      const { error } = await supabase
+        .from('payments')
+        .insert(paymentData);
+
+      if (error) throw error;
+
+      // If payment is completed and subscription was overdue, reactivate
+      if (formData.status === 'completed') {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('status, asset_id')
+          .eq('id', formData.subscription_id)
+          .single();
+
+        if (sub && sub.status === 'overdue') {
+          await supabase
+            .from('subscriptions')
+            .update({ status: 'active' })
+            .eq('id', formData.subscription_id);
+
+          await supabase
+            .from('assets')
+            .update({ status: 'active', block_reason: null })
+            .eq('id', sub.asset_id);
+        }
+      }
+
+      toast({ title: 'Pagamento registrado!' });
+      setIsDialogOpen(false);
+      setFormData({
+        subscription_id: '',
+        amount: '',
+        payment_method: 'pix',
+        status: 'completed',
+      });
+      fetchPayments();
+    } catch (error: unknown) {
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Erro ao registrar pagamento',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -147,11 +259,17 @@ export default function Payments() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Pagamentos</h1>
-          <p className="text-muted-foreground mt-1">
-            Visualize o histórico de pagamentos
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Pagamentos</h1>
+            <p className="text-muted-foreground mt-1">
+              Visualize e registre pagamentos
+            </p>
+          </div>
+          <Button variant="glow" onClick={() => setIsDialogOpen(true)}>
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Novo Pagamento</span>
+          </Button>
         </div>
 
         {/* Stats */}
@@ -280,6 +398,106 @@ export default function Payments() {
             </div>
           </div>
         )}
+
+        {/* Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Novo Pagamento</DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleCreatePayment} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Assinatura</Label>
+                <Select
+                  value={formData.subscription_id}
+                  onValueChange={(value) => {
+                    const sub = subscriptions.find(s => s.id === value);
+                    setFormData({ 
+                      ...formData, 
+                      subscription_id: value,
+                      amount: sub ? sub.monthly_value.toString() : ''
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma assinatura" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subscriptions.map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id}>
+                        {sub.plan_name} - {sub.assets?.clients?.name || sub.assets?.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Valor (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Método de Pagamento</Label>
+                <Select
+                  value={formData.payment_method}
+                  onValueChange={(value: 'pix' | 'card') => 
+                    setFormData({ ...formData, payment_method: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="card">Cartão</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value: 'pending' | 'completed') => 
+                    setFormData({ ...formData, status: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="completed">Pago</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="glow" className="flex-1" disabled={saving}>
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Registrar
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

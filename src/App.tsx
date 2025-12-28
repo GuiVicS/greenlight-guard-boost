@@ -8,10 +8,12 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Assets from "./pages/Assets";
+import AssetDetails from "./pages/AssetDetails";
 import Subscriptions from "./pages/Subscriptions";
 import Payments from "./pages/Payments";
 import Logs from "./pages/Logs";
 import StripeIntegration from "./pages/StripeIntegration";
+import Settings from "./pages/Settings";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import NotFound from "./pages/NotFound";
@@ -71,6 +73,14 @@ const AppRoutes = () => (
       }
     />
     <Route
+      path="/assets/:id"
+      element={
+        <ProtectedRoute>
+          <AssetDetails />
+        </ProtectedRoute>
+      }
+    />
+    <Route
       path="/subscriptions"
       element={
         <ProtectedRoute>
@@ -99,6 +109,14 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <StripeIntegration />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/settings"
+      element={
+        <ProtectedRoute>
+          <Settings />
         </ProtectedRoute>
       }
     />

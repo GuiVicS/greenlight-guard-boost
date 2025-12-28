@@ -288,7 +288,7 @@ export default function StripeIntegration() {
             <div className="bg-muted/30 rounded-lg p-4">
               <p className="text-xs text-muted-foreground mb-2">URL do Webhook:</p>
               <code className="text-sm text-primary break-all">
-                {window.location.origin.replace('id-preview--', '').replace('.lovable.app', '.supabase.co')}/functions/v1/stripe-webhook
+                https://hthupflasjifsweetqhx.supabase.co/functions/v1/stripe-webhook
               </code>
             </div>
             <p className="text-xs text-muted-foreground">
