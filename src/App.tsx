@@ -8,6 +8,10 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Assets from "./pages/Assets";
+import Subscriptions from "./pages/Subscriptions";
+import Payments from "./pages/Payments";
+import Logs from "./pages/Logs";
+import StripeIntegration from "./pages/StripeIntegration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +66,38 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <Assets />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/subscriptions"
+      element={
+        <ProtectedRoute>
+          <Subscriptions />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/payments"
+      element={
+        <ProtectedRoute>
+          <Payments />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/logs"
+      element={
+        <ProtectedRoute>
+          <Logs />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/stripe-integration"
+      element={
+        <ProtectedRoute>
+          <StripeIntegration />
         </ProtectedRoute>
       }
     />
