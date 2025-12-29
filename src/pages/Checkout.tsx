@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, CreditCard, FileText, CheckCircle, Shield, Lock } from "lucide-react";
+import { Loader2, CheckCircle, Shield, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { CardPaymentForm } from "@/components/checkout/CardPaymentForm";
-import { BoletoPaymentForm } from "@/components/checkout/BoletoPaymentForm";
-import { CustomerForm } from "@/components/checkout/CustomerForm";
-import { formatCurrency, getTranslations, getCountryConfig } from "@/lib/checkout-utils";
+import { CheckoutTimeline } from "@/components/checkout/CheckoutTimeline";
+import { StepIdentification } from "@/components/checkout/StepIdentification";
+import { StepPayment } from "@/components/checkout/StepPayment";
+import { formatCurrency, getTranslations } from "@/lib/checkout-utils";
 
 interface SubscriptionData {
   id: string;
@@ -31,15 +29,6 @@ interface SubscriptionData {
   };
 }
 
-// Country to locale mapping
-const countryLocaleMap: Record<string, 'pt-BR' | 'en' | 'es' | 'pt'> = {
-  BR: 'pt-BR',
-  US: 'en',
-  PT: 'pt',
-  ES: 'es',
-  MX: 'es',
-};
-
 // Countries that support boleto
 const boletoCountries = ['BR'];
 
@@ -49,6 +38,7 @@ export default function Checkout() {
   
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "boleto">("card");
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -151,20 +141,25 @@ export default function Checkout() {
     }
   };
 
-  useEffect(() => {
+  const handleGoToPayment = () => {
+    setCurrentStep(2);
     if (subscription && !clientSecret) {
       createPaymentIntent(paymentMethod);
     }
-  }, [subscription]);
+  };
 
-  const handleTabChange = (value: string) => {
-    const method = value as "card" | "boleto";
+  const handlePaymentMethodChange = (method: "card" | "boleto") => {
     setPaymentMethod(method);
     createPaymentIntent(method);
   };
 
   const handlePaymentSuccess = () => {
+    setCurrentStep(3);
     setPaymentSuccess(true);
+  };
+
+  const handleBackToIdentification = () => {
+    setCurrentStep(1);
   };
 
   if (loading) {
@@ -199,29 +194,60 @@ export default function Checkout() {
     );
   }
 
+  const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
+  const isDarkTheme = subscription.asset.checkout_theme === 'dark';
+  const showBoleto = boletoCountries.includes(country);
+  const formattedAmount = formatCurrency(subscription.monthly_value, country);
+
   if (paymentSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl border-0">
-          <CardContent className="pt-8 pb-8 text-center">
-            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="h-10 w-10 text-green-500" />
+      <div className={`min-h-screen ${isDarkTheme 
+        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' 
+        : 'bg-gradient-to-br from-slate-50 via-white to-slate-100'}`}
+      >
+        {/* Header */}
+        <header className={`border-b border-border/50 py-4 px-4 shadow-sm ${isDarkTheme ? 'bg-slate-900' : 'bg-white'}`}>
+          <div className="container max-w-6xl mx-auto flex items-center justify-between">
+            {subscription.asset.checkout_logo_url ? (
+              <img 
+                src={subscription.asset.checkout_logo_url} 
+                alt="Logo" 
+                className="max-h-10 object-contain"
+              />
+            ) : (
+              <div className={`font-bold text-xl ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{subscription.asset.name}</div>
+            )}
+            <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+              <Lock className="h-4 w-4" />
+              <span className="hidden sm:inline">{t.securePayment.toUpperCase()}</span>
             </div>
-            <h2 className="text-2xl font-bold mb-3">{t.allGood}</h2>
-            <p className="text-muted-foreground mb-6">
-              {t.attentionBanner}
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+        </header>
+
+        {/* Timeline */}
+        <div className="container max-w-4xl mx-auto px-4">
+          <CheckoutTimeline currentStep={3} primaryColor={primaryColor} isDarkTheme={isDarkTheme} />
+        </div>
+
+        <div className="container max-w-md mx-auto p-4">
+          <Card className={`shadow-xl border-0 ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
+            <CardContent className="pt-8 pb-8 text-center">
+              <div 
+                className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                style={{ backgroundColor: `${primaryColor}20` }}
+              >
+                <CheckCircle className="h-10 w-10" style={{ color: primaryColor }} />
+              </div>
+              <h2 className={`text-2xl font-bold mb-3 ${isDarkTheme ? 'text-white' : ''}`}>{t.allGood}</h2>
+              <p className={`mb-6 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                {t.attentionBanner}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
-
-  const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
-  const isDarkTheme = subscription.asset.checkout_theme === 'dark';
-  const locale = countryLocaleMap[country] || 'pt-BR';
-  const showBoleto = boletoCountries.includes(country);
-  const formattedAmount = formatCurrency(subscription.monthly_value, country);
 
   return (
     <div className={`min-h-screen ${isDarkTheme 
@@ -255,159 +281,42 @@ export default function Checkout() {
         {t.attentionBanner}
       </div>
 
-      <div className="container max-w-6xl mx-auto p-4 py-8">
+      {/* Timeline */}
+      <div className="container max-w-4xl mx-auto px-4">
+        <CheckoutTimeline currentStep={currentStep} primaryColor={primaryColor} isDarkTheme={isDarkTheme} />
+      </div>
+
+      <div className="container max-w-6xl mx-auto p-4 pb-8">
         <div className="grid lg:grid-cols-5 gap-8">
           {/* Left Column - Forms */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Identification Section */}
-            <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
-              <CardHeader className={`pb-4 ${isDarkTheme 
-                ? 'bg-gradient-to-r from-slate-800 to-slate-700' 
-                : 'bg-gradient-to-r from-slate-50 to-white'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-md"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    1
-                  </div>
-                  <div>
-                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>{t.customerInfo}</CardTitle>
-                    <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                      {country === 'BR' 
-                        ? 'Utilizaremos seu e-mail para identificar seu perfil e enviar o comprovante.'
-                        : 'We will use your email to identify your profile and send the receipt.'}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
+          <div className="lg:col-span-3">
+            {currentStep === 1 && (
+              <StepIdentification
+                customerData={customerData}
+                onChange={setCustomerData}
+                onNext={handleGoToPayment}
+                primaryColor={primaryColor}
+                isDarkTheme={isDarkTheme}
+                country={country}
+              />
+            )}
 
-              <CardContent className="pt-6">
-                <CustomerForm 
-                  customerData={customerData}
-                  onChange={setCustomerData}
-                  primaryColor={primaryColor}
-                  isDarkTheme={isDarkTheme}
-                  country={country}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Payment Section */}
-            <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
-              <CardHeader className={`pb-4 ${isDarkTheme 
-                ? 'bg-gradient-to-r from-slate-800 to-slate-700' 
-                : 'bg-gradient-to-r from-slate-50 to-white'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-md"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    2
-                  </div>
-                  <div>
-                    <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>{t.paymentTitle}</CardTitle>
-                    <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                      {t.selectPaymentMethod}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent className="pt-6">
-                <Tabs value={paymentMethod} onValueChange={handleTabChange}>
-                  <TabsList className={`grid w-full ${showBoleto ? 'grid-cols-2' : 'grid-cols-1'} mb-6 h-14 p-1 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/50'}`}>
-                    <TabsTrigger 
-                      value="card" 
-                      className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
-                    >
-                      <CreditCard className="h-5 w-5" />
-                      <span className="font-medium">{t.creditCard}</span>
-                    </TabsTrigger>
-                    {showBoleto && (
-                      <TabsTrigger 
-                        value="boleto" 
-                        className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
-                      >
-                        <FileText className="h-5 w-5" />
-                        <span className="font-medium">{t.boleto}</span>
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
-
-                  {creatingIntent ? (
-                    <div className="flex items-center justify-center py-16">
-                      <div className="text-center">
-                        <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" style={{ color: primaryColor }} />
-                        <p className="text-muted-foreground">{t.processing}</p>
-                      </div>
-                    </div>
-                  ) : stripePromise && clientSecret ? (
-                    <Elements 
-                      stripe={stripePromise} 
-                      options={{ 
-                        clientSecret,
-                        appearance: {
-                          theme: isDarkTheme ? "night" : "stripe",
-                          variables: {
-                            colorPrimary: primaryColor,
-                            borderRadius: "12px",
-                            fontFamily: "system-ui, sans-serif",
-                            colorBackground: isDarkTheme ? "#1e293b" : "#ffffff",
-                            colorText: isDarkTheme ? "#ffffff" : "#1e293b",
-                          },
-                          rules: {
-                            ".Input": {
-                              border: isDarkTheme ? "1px solid #475569" : "1px solid #e2e8f0",
-                              boxShadow: "none",
-                              padding: "12px 16px",
-                              backgroundColor: isDarkTheme ? "#334155" : "#ffffff",
-                              color: isDarkTheme ? "#ffffff" : "#1e293b",
-                            },
-                            ".Input:focus": {
-                              border: `2px solid ${primaryColor}`,
-                              boxShadow: "none",
-                            },
-                            ".Label": {
-                              color: isDarkTheme ? "#cbd5e1" : "#64748b",
-                            },
-                          },
-                        },
-                        locale: locale,
-                      }}
-                    >
-                      <TabsContent value="card" className="mt-0">
-                        <CardPaymentForm 
-                          amount={subscription.monthly_value}
-                          primaryColor={primaryColor}
-                          onSuccess={handlePaymentSuccess}
-                          isDarkTheme={isDarkTheme}
-                          country={country}
-                        />
-                      </TabsContent>
-                      <TabsContent value="boleto" className="mt-0">
-                        <BoletoPaymentForm 
-                          clientSecret={clientSecret}
-                          amount={subscription.monthly_value}
-                          primaryColor={primaryColor}
-                          customerData={customerData}
-                          onSuccess={handlePaymentSuccess}
-                          isDarkTheme={isDarkTheme}
-                        />
-                      </TabsContent>
-                    </Elements>
-                  ) : (
-                    <div className={`text-center py-12 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                      {country === 'BR' 
-                        ? 'Erro ao carregar formulário de pagamento. Tente novamente.'
-                        : 'Error loading payment form. Please try again.'}
-                    </div>
-                  )}
-                </Tabs>
-              </CardContent>
-            </Card>
+            {currentStep === 2 && (
+              <StepPayment
+                subscription={subscription}
+                customerData={customerData}
+                stripePromise={stripePromise}
+                clientSecret={clientSecret}
+                creatingIntent={creatingIntent}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={handlePaymentMethodChange}
+                onSuccess={handlePaymentSuccess}
+                onBack={handleBackToIdentification}
+                primaryColor={primaryColor}
+                isDarkTheme={isDarkTheme}
+                showBoleto={showBoleto}
+              />
+            )}
           </div>
 
           {/* Right Column - Order Summary */}

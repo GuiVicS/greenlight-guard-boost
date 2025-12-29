@@ -346,7 +346,7 @@ export type Database = {
       app_role: "admin" | "staff"
       asset_status: "active" | "blocked"
       asset_type: "wordpress" | "shopify" | "custom" | "other"
-      payment_method: "pix" | "card"
+      payment_method: "pix" | "card" | "boleto"
       payment_status: "pending" | "completed" | "failed" | "refunded"
       subscription_status: "active" | "overdue" | "cancelled"
     }
@@ -479,7 +479,7 @@ export const Constants = {
       app_role: ["admin", "staff"],
       asset_status: ["active", "blocked"],
       asset_type: ["wordpress", "shopify", "custom", "other"],
-      payment_method: ["pix", "card"],
+      payment_method: ["pix", "card", "boleto"],
       payment_status: ["pending", "completed", "failed", "refunded"],
       subscription_status: ["active", "overdue", "cancelled"],
     },
