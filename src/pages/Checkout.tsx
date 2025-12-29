@@ -85,6 +85,7 @@ export default function Checkout() {
     if (!assetId) return;
 
     try {
+      // Busca qualquer assinatura do asset (não apenas overdue) para permitir cobranças avulsas
       const { data, error } = await supabase
         .from("subscriptions")
         .select(`
@@ -109,15 +110,19 @@ export default function Checkout() {
           )
         `)
         .eq("asset_id", assetId)
-        .eq("status", "overdue")
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
 
-      // Se não houver assinatura em atraso para este asset, não é erro — apenas não há pagamento pendente.
       if (!data) {
-        setHasError(false);
-        setSubscription(null);
+        setHasError(true);
+        toast({
+          title: "Erro",
+          description: "Nenhuma assinatura encontrada para este ativo",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -300,23 +305,9 @@ export default function Checkout() {
     );
   }
 
-  // Tela de sucesso - sem pagamentos pendentes
+  // Se não há subscription, a tela de erro já foi mostrada
   if (!subscription) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl border-0 bg-white">
-          <CardContent className="pt-8 pb-8 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="h-10 w-10 text-green-500" />
-            </div>
-            <h2 className="text-2xl font-bold mb-3 text-slate-900">{t.allGood}</h2>
-            <p className="text-slate-600">
-              {t.allGoodDescription}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
