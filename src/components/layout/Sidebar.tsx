@@ -163,7 +163,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
 export function MobileHeader({ onMenuClick }: { onMenuClick: () => void }) {
   return (
-    <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b border-sidebar-border z-30 flex items-center px-4">
+    <header className="lg:hidden fixed top-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-sidebar border-b border-sidebar-border z-30 flex items-center px-4">
       <Button
         variant="ghost"
         size="icon"
