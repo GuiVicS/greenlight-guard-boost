@@ -61,6 +61,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get app settings for checkout URL
+    const { data: appSettings } = await supabase
+      .from("app_settings")
+      .select("checkout_base_url")
+      .single();
+
     // Get subscription to find the country for translations
     const { data: subscription } = await supabase
       .from("subscriptions")
@@ -69,10 +75,9 @@ Deno.serve(async (req) => {
       .eq("status", "overdue")
       .single();
 
-    // Build checkout URL using the Supabase URL as base
-    // Extract project ref from supabase URL (format: https://PROJECT_REF.supabase.co)
-    const projectRef = supabaseUrl.replace("https://", "").split(".")[0];
-    const checkoutUrl = `https://id-preview--${projectRef}.lovable.app/checkout/${asset.id}`;
+    // Build checkout URL from app settings
+    const baseUrl = appSettings?.checkout_base_url?.replace(/\/$/, "") || "";
+    const checkoutUrl = baseUrl ? `${baseUrl}/checkout/${asset.id}` : "#";
 
     const primaryColor = asset.checkout_primary_color || "#dc2626";
     const logoUrl = asset.checkout_logo_url || "";
