@@ -3,7 +3,8 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, CheckCircle, Shield, Lock } from "lucide-react";
+import { Loader2, CheckCircle, Shield, Lock, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { CheckoutTimeline } from "@/components/checkout/CheckoutTimeline";
 import { StepIdentification } from "@/components/checkout/StepIdentification";
@@ -45,6 +46,7 @@ export default function Checkout() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "boleto" | "pix">("card");
@@ -127,6 +129,7 @@ export default function Checkout() {
       }
     } catch (error) {
       console.error("Error fetching subscription:", error);
+      setHasError(true);
       toast({
         title: "Erro",
         description: "Não foi possível carregar os dados do pagamento",
@@ -264,16 +267,42 @@ export default function Checkout() {
   const country = subscription?.country || 'BR';
   const t = getTranslations(country);
 
+  // Tela de erro ao carregar dados
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-white">
+          <CardContent className="pt-8 pb-8 text-center">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="h-10 w-10 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3 text-slate-900">Erro ao carregar</h2>
+            <p className="text-slate-600">
+              Não foi possível carregar os dados do pagamento. Tente novamente mais tarde.
+            </p>
+            <Button 
+              onClick={() => window.location.reload()}
+              className="mt-6"
+            >
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Tela de sucesso - sem pagamentos pendentes
   if (!subscription) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl border-0">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-white">
           <CardContent className="pt-8 pb-8 text-center">
-            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-10 w-10 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold mb-3">{t.allGood}</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-2xl font-bold mb-3 text-slate-900">{t.allGood}</h2>
+            <p className="text-slate-600">
               {t.allGoodDescription}
             </p>
           </CardContent>
