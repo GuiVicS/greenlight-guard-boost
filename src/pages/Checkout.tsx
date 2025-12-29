@@ -219,9 +219,31 @@ export default function Checkout() {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setCurrentStep(3);
     setPaymentSuccess(true);
+    
+    // Immediately try to unblock the asset via backend function
+    if (subscription) {
+      try {
+        await supabase.functions.invoke("unlock-asset-after-payment", {
+          body: {
+            subscriptionId: subscription.id,
+            assetId: subscription.asset.id,
+          },
+        });
+        console.log("Asset unlocked successfully");
+      } catch (error) {
+        console.error("Error unlocking asset:", error);
+      }
+    }
+
+    // Redirect to return URL after a short delay
+    if (returnUrl) {
+      setTimeout(() => {
+        window.location.href = decodeURIComponent(returnUrl);
+      }, 3000);
+    }
   };
 
   const handleBackToIdentification = () => {
@@ -306,9 +328,25 @@ export default function Checkout() {
                 <CheckCircle className="h-10 w-10" style={{ color: primaryColor }} />
               </div>
               <h2 className={`text-2xl font-bold mb-3 ${isDarkTheme ? 'text-white' : ''}`}>{t.allGood}</h2>
-              <p className={`mb-6 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                {t.attentionBanner}
+              <p className={`mb-4 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                Seu pagamento foi aprovado e o site foi desbloqueado!
               </p>
+              
+              {returnUrl && (
+                <p className={`text-sm ${isDarkTheme ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                  Redirecionando para o site em alguns segundos...
+                </p>
+              )}
+              
+              {returnUrl && (
+                <button
+                  onClick={() => window.location.href = decodeURIComponent(returnUrl)}
+                  className="mt-4 px-6 py-2 rounded-lg text-white font-medium transition-colors"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  Ir para o site agora
+                </button>
+              )}
             </CardContent>
           </Card>
         </div>

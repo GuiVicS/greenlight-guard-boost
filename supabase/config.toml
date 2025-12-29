@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.mercadopago-webhook]
 verify_jwt = false
+
+[functions.unlock-asset-after-payment]
+verify_jwt = false
