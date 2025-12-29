@@ -22,6 +22,9 @@ interface SubscriptionData {
     checkout_message: string | null;
     checkout_primary_color: string | null;
     checkout_theme: 'light' | 'dark' | null;
+    checkout_title: string | null;
+    checkout_favicon_url: string | null;
+    checkout_description: string | null;
     client: {
       name: string;
       email: string;
@@ -94,6 +97,9 @@ export default function Checkout() {
             checkout_message,
             checkout_primary_color,
             checkout_theme,
+            checkout_title,
+            checkout_favicon_url,
+            checkout_description,
             client:clients (
               name,
               email
@@ -108,6 +114,9 @@ export default function Checkout() {
       
       const subscriptionData = data as unknown as SubscriptionData;
       setSubscription(subscriptionData);
+      
+      // Apply custom checkout branding
+      applyCheckoutBranding(subscriptionData);
       
       // Pre-fill customer email if available
       if (subscriptionData.asset.client.email) {
@@ -125,6 +134,38 @@ export default function Checkout() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const applyCheckoutBranding = (subscriptionData: SubscriptionData) => {
+    // Set page title
+    const title = subscriptionData.asset.checkout_title || `Checkout - ${subscriptionData.asset.name}`;
+    document.title = title;
+    
+    // Set meta description
+    const description = subscriptionData.asset.checkout_description || 
+      `Regularize seu pagamento para ${subscriptionData.asset.name}`;
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', description);
+    } else {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      metaDescription.setAttribute('content', description);
+      document.head.appendChild(metaDescription);
+    }
+    
+    // Set custom favicon
+    if (subscriptionData.asset.checkout_favicon_url) {
+      let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+      if (favicon) {
+        favicon.href = subscriptionData.asset.checkout_favicon_url;
+      } else {
+        favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.href = subscriptionData.asset.checkout_favicon_url;
+        document.head.appendChild(favicon);
+      }
     }
   };
 

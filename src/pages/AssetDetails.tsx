@@ -49,6 +49,9 @@ export default function AssetDetails() {
     checkout_primary_color: '#10B981',
     checkout_logo_url: '',
     checkout_theme: 'light' as 'light' | 'dark',
+    checkout_title: '',
+    checkout_favicon_url: '',
+    checkout_description: '',
   });
 
   useEffect(() => {
@@ -89,6 +92,9 @@ export default function AssetDetails() {
         checkout_primary_color: assetRes.data.checkout_primary_color || '#10B981',
         checkout_logo_url: assetRes.data.checkout_logo_url || '',
         checkout_theme: (assetRes.data as any).checkout_theme || 'light',
+        checkout_title: (assetRes.data as any).checkout_title || '',
+        checkout_favicon_url: (assetRes.data as any).checkout_favicon_url || '',
+        checkout_description: (assetRes.data as any).checkout_description || '',
       });
     } catch (error) {
       console.error('Error fetching asset:', error);
@@ -403,95 +409,151 @@ export default function AssetDetails() {
               </h3>
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Mensagem Personalizada</Label>
-                  <Textarea
-                    value={checkoutSettings.checkout_message}
-                    onChange={(e) => setCheckoutSettings({ 
-                      ...checkoutSettings, 
-                      checkout_message: e.target.value 
-                    })}
-                    placeholder="Ex: Regularize seu pagamento e mantenha seu site ativo!"
-                    rows={3}
-                  />
-                </div>
+                {/* SEO & Branding Section */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/30">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">SEO & Branding</h4>
+                  
+                  <div className="space-y-2">
+                    <Label>Título da Página</Label>
+                    <Input
+                      value={checkoutSettings.checkout_title}
+                      onChange={(e) => setCheckoutSettings({ 
+                        ...checkoutSettings, 
+                        checkout_title: e.target.value 
+                      })}
+                      placeholder="Ex: Pagamento - Nome da Empresa"
+                    />
+                    <p className="text-xs text-muted-foreground">Título exibido na aba do navegador</p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Cor Principal</Label>
-                  <div className="flex gap-3">
-                    <Input
-                      type="color"
-                      value={checkoutSettings.checkout_primary_color}
+                  <div className="space-y-2">
+                    <Label>Meta Descrição</Label>
+                    <Textarea
+                      value={checkoutSettings.checkout_description}
                       onChange={(e) => setCheckoutSettings({ 
                         ...checkoutSettings, 
-                        checkout_primary_color: e.target.value 
+                        checkout_description: e.target.value 
                       })}
-                      className="w-16 h-10 p-1 cursor-pointer"
+                      placeholder="Ex: Regularize seu pagamento de forma rápida e segura."
+                      rows={2}
                     />
+                    <p className="text-xs text-muted-foreground">Descrição para mecanismos de busca</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>URL do Favicon</Label>
                     <Input
-                      value={checkoutSettings.checkout_primary_color}
+                      value={checkoutSettings.checkout_favicon_url}
                       onChange={(e) => setCheckoutSettings({ 
                         ...checkoutSettings, 
-                        checkout_primary_color: e.target.value 
+                        checkout_favicon_url: e.target.value 
                       })}
-                      placeholder="#10B981"
-                      className="flex-1"
+                      placeholder="https://exemplo.com/favicon.ico"
                     />
+                    <p className="text-xs text-muted-foreground">Ícone exibido na aba do navegador (16x16 ou 32x32 px)</p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4" />
-                    URL do Logo
-                  </Label>
-                  <Input
-                    value={checkoutSettings.checkout_logo_url}
-                    onChange={(e) => setCheckoutSettings({ 
-                      ...checkoutSettings, 
-                      checkout_logo_url: e.target.value 
-                    })}
-                    placeholder="https://exemplo.com/logo.png"
-                  />
+                {/* Visual Appearance Section */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/30">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Aparência Visual</h4>
+                  
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      URL do Logo
+                    </Label>
+                    <Input
+                      value={checkoutSettings.checkout_logo_url}
+                      onChange={(e) => setCheckoutSettings({ 
+                        ...checkoutSettings, 
+                        checkout_logo_url: e.target.value 
+                      })}
+                      placeholder="https://exemplo.com/logo.png"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Cor Principal</Label>
+                    <div className="flex gap-3">
+                      <Input
+                        type="color"
+                        value={checkoutSettings.checkout_primary_color}
+                        onChange={(e) => setCheckoutSettings({ 
+                          ...checkoutSettings, 
+                          checkout_primary_color: e.target.value 
+                        })}
+                        className="w-16 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        value={checkoutSettings.checkout_primary_color}
+                        onChange={(e) => setCheckoutSettings({ 
+                          ...checkoutSettings, 
+                          checkout_primary_color: e.target.value 
+                        })}
+                        placeholder="#10B981"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tema do Checkout</Label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCheckoutSettings({ 
+                          ...checkoutSettings, 
+                          checkout_theme: 'light' 
+                        })}
+                        className={cn(
+                          "flex-1 p-4 rounded-lg border-2 transition-all",
+                          "flex flex-col items-center gap-2",
+                          checkoutSettings.checkout_theme === 'light' 
+                            ? "border-primary bg-primary/10" 
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <div className="w-12 h-8 bg-white border border-border rounded shadow-sm"></div>
+                        <span className="text-sm font-medium">Light</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCheckoutSettings({ 
+                          ...checkoutSettings, 
+                          checkout_theme: 'dark' 
+                        })}
+                        className={cn(
+                          "flex-1 p-4 rounded-lg border-2 transition-all",
+                          "flex flex-col items-center gap-2",
+                          checkoutSettings.checkout_theme === 'dark' 
+                            ? "border-primary bg-primary/10" 
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <div className="w-12 h-8 bg-slate-900 border border-slate-700 rounded shadow-sm"></div>
+                        <span className="text-sm font-medium">Dark</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Tema do Checkout</Label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setCheckoutSettings({ 
+                {/* Content Section */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/30">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Conteúdo</h4>
+                  
+                  <div className="space-y-2">
+                    <Label>Mensagem Personalizada</Label>
+                    <Textarea
+                      value={checkoutSettings.checkout_message}
+                      onChange={(e) => setCheckoutSettings({ 
                         ...checkoutSettings, 
-                        checkout_theme: 'light' 
+                        checkout_message: e.target.value 
                       })}
-                      className={cn(
-                        "flex-1 p-4 rounded-lg border-2 transition-all",
-                        "flex flex-col items-center gap-2",
-                        checkoutSettings.checkout_theme === 'light' 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className="w-12 h-8 bg-white border border-border rounded shadow-sm"></div>
-                      <span className="text-sm font-medium">Light</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCheckoutSettings({ 
-                        ...checkoutSettings, 
-                        checkout_theme: 'dark' 
-                      })}
-                      className={cn(
-                        "flex-1 p-4 rounded-lg border-2 transition-all",
-                        "flex flex-col items-center gap-2",
-                        checkoutSettings.checkout_theme === 'dark' 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className="w-12 h-8 bg-slate-900 border border-slate-700 rounded shadow-sm"></div>
-                      <span className="text-sm font-medium">Dark</span>
-                    </button>
+                      placeholder="Ex: Regularize seu pagamento e mantenha seu site ativo!"
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground">Mensagem exibida no checkout para o cliente</p>
                   </div>
                 </div>
 
