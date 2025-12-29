@@ -468,7 +468,7 @@ export default function PaymentGatewaysSettings() {
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {mpSettings.is_configured 
-                    ? 'Pix' 
+                    ? 'Pix, Cartão de Crédito/Débito e Boleto' 
                     : 'Insira suas credenciais para ativar'}
                 </p>
               </div>
@@ -561,8 +561,20 @@ export default function PaymentGatewaysSettings() {
               {paymentMethods.filter(m => m.gateway_type === 'mercadopago').map(method => (
                 <div key={method.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <QrCode className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Pix</span>
+                    {method.method_name === 'pix' ? (
+                      <QrCode className="w-5 h-5 text-muted-foreground" />
+                    ) : method.method_name === 'card' ? (
+                      <CreditCard className="w-5 h-5 text-muted-foreground" />
+                    ) : (
+                      <FileText className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    <span className="font-medium capitalize">
+                      {method.method_name === 'pix' 
+                        ? 'Pix' 
+                        : method.method_name === 'card' 
+                          ? 'Cartão (Crédito/Débito)' 
+                          : 'Boleto Bancário'}
+                    </span>
                   </div>
                   <Switch
                     checked={method.is_enabled}
