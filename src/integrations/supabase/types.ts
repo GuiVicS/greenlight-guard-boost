@@ -76,10 +76,13 @@ export type Database = {
       assets: {
         Row: {
           block_reason: string | null
+          checkout_description: string | null
+          checkout_favicon_url: string | null
           checkout_logo_url: string | null
           checkout_message: string | null
           checkout_primary_color: string | null
           checkout_theme: string | null
+          checkout_title: string | null
           client_id: string
           created_at: string
           id: string
@@ -91,10 +94,13 @@ export type Database = {
         }
         Insert: {
           block_reason?: string | null
+          checkout_description?: string | null
+          checkout_favicon_url?: string | null
           checkout_logo_url?: string | null
           checkout_message?: string | null
           checkout_primary_color?: string | null
           checkout_theme?: string | null
+          checkout_title?: string | null
           client_id: string
           created_at?: string
           id?: string
@@ -106,10 +112,13 @@ export type Database = {
         }
         Update: {
           block_reason?: string | null
+          checkout_description?: string | null
+          checkout_favicon_url?: string | null
           checkout_logo_url?: string | null
           checkout_message?: string | null
           checkout_primary_color?: string | null
           checkout_theme?: string | null
+          checkout_title?: string | null
           client_id?: string
           created_at?: string
           id?: string
