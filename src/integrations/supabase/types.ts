@@ -137,6 +137,7 @@ export type Database = {
           name: string
           phone: string | null
           status: string
+          stripe_customer_id: string | null
           updated_at: string
         }
         Insert: {
@@ -146,6 +147,7 @@ export type Database = {
           name: string
           phone?: string | null
           status?: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -155,6 +157,7 @@ export type Database = {
           name?: string
           phone?: string | null
           status?: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -293,6 +296,42 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_products: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          interval: string
+          name: string
+          stripe_price_id: string | null
+          stripe_product_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          interval?: string
+          name: string
+          stripe_price_id?: string | null
+          stripe_product_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          interval?: string
+          name?: string
+          stripe_price_id?: string | null
+          stripe_product_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stripe_settings: {
         Row: {
           created_at: string
@@ -332,40 +371,52 @@ export type Database = {
       subscriptions: {
         Row: {
           asset_id: string
+          auto_charge_enabled: boolean
+          billing_type: string
           country: string
           created_at: string
           due_date: string
           id: string
           monthly_value: number
+          next_billing_date: string | null
           plan_name: string
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
+          stripe_price_id: string | null
           stripe_subscription_id: string | null
           updated_at: string
         }
         Insert: {
           asset_id: string
+          auto_charge_enabled?: boolean
+          billing_type?: string
           country?: string
           created_at?: string
           due_date: string
           id?: string
           monthly_value: number
+          next_billing_date?: string | null
           plan_name: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string
         }
         Update: {
           asset_id?: string
+          auto_charge_enabled?: boolean
+          billing_type?: string
           country?: string
           created_at?: string
           due_date?: string
           id?: string
           monthly_value?: number
+          next_billing_date?: string | null
           plan_name?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string
         }
