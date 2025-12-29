@@ -27,7 +27,7 @@ export function StepIdentification({
   const isValid = customerData.name.trim() && customerData.email.trim() && customerData.document.trim();
 
   return (
-    <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
+    <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : 'bg-white'}`}>
       <CardHeader className={`pb-4 ${isDarkTheme 
         ? 'bg-gradient-to-r from-slate-800 to-slate-700' 
         : 'bg-gradient-to-r from-slate-50 to-white'}`}
@@ -40,10 +40,10 @@ export function StepIdentification({
             <User className="h-6 w-6" />
           </div>
           <div>
-            <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : ''}`}>
+            <CardTitle className={`text-xl ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
               {country === 'BR' ? 'Seus Dados' : 'Your Information'}
             </CardTitle>
-            <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+            <p className={`text-sm mt-1 ${isDarkTheme ? 'text-slate-400' : 'text-slate-500'}`}>
               {country === 'BR' 
                 ? 'Preencha seus dados para continuar'
                 : 'Fill in your details to continue'}

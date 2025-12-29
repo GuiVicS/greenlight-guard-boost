@@ -26,7 +26,7 @@ export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="name" className={`flex items-center gap-2 text-sm font-medium ${isDarkTheme ? 'text-slate-300' : ''}`}>
+        <Label htmlFor="name" className={`flex items-center gap-2 text-sm font-medium ${isDarkTheme ? 'text-slate-300' : 'text-slate-700'}`}>
           <User className="h-4 w-4" style={{ color: primaryColor }} />
           {config.locale.startsWith('pt') ? 'Nome completo' : config.locale.startsWith('es') ? 'Nombre completo' : 'Full name'}
         </Label>
@@ -37,7 +37,7 @@ export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme
           onChange={(e) => onChange({ ...customerData, name: e.target.value })}
           className={`h-12 text-base rounded-xl border-2 transition-all focus:ring-0 ${isDarkTheme 
             ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-slate-400' 
-            : 'border-muted focus:border-primary'}`}
+            : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-400'}`}
           style={{ 
             '--tw-ring-color': primaryColor,
           } as React.CSSProperties}
@@ -45,7 +45,7 @@ export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email" className={`flex items-center gap-2 text-sm font-medium ${isDarkTheme ? 'text-slate-300' : ''}`}>
+        <Label htmlFor="email" className={`flex items-center gap-2 text-sm font-medium ${isDarkTheme ? 'text-slate-300' : 'text-slate-700'}`}>
           <Mail className="h-4 w-4" style={{ color: primaryColor }} />
           E-mail
         </Label>
@@ -57,12 +57,12 @@ export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme
           onChange={(e) => onChange({ ...customerData, email: e.target.value })}
           className={`h-12 text-base rounded-xl border-2 transition-all focus:ring-0 ${isDarkTheme 
             ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-slate-400' 
-            : 'border-muted focus:border-primary'}`}
+            : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-400'}`}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="document" className={`flex items-center gap-2 text-sm font-medium ${isDarkTheme ? 'text-slate-300' : ''}`}>
+        <Label htmlFor="document" className={`flex items-center gap-2 text-sm font-medium ${isDarkTheme ? 'text-slate-300' : 'text-slate-700'}`}>
           <FileText className="h-4 w-4" style={{ color: primaryColor }} />
           {config.documentLabel}
         </Label>
@@ -73,7 +73,7 @@ export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme
           onChange={(e) => handleDocumentChange(e.target.value)}
           className={`h-12 text-base rounded-xl border-2 transition-all focus:ring-0 ${isDarkTheme 
             ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-slate-400' 
-            : 'border-muted focus:border-primary'}`}
+            : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-400'}`}
         />
       </div>
     </div>

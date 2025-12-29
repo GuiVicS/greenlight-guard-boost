@@ -428,13 +428,13 @@ export default function Checkout() {
 
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className={`shadow-lg border-0 sticky top-4 ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
+            <Card className={`shadow-lg border-0 sticky top-4 ${isDarkTheme ? 'bg-slate-800/90' : 'bg-white'}`}>
               <CardHeader className="pb-4">
-                <CardTitle className={`text-lg font-bold tracking-wide ${isDarkTheme ? 'text-white' : ''}`}>{t.orderSummary.toUpperCase()}</CardTitle>
+                <CardTitle className={`text-lg font-bold tracking-wide ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{t.orderSummary.toUpperCase()}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Product Info */}
-                <div className={`flex gap-4 p-4 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/30'}`}>
+                <div className={`flex gap-4 p-4 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                   <div 
                     className="w-16 h-16 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-md shrink-0"
                     style={{ backgroundColor: primaryColor }}
@@ -442,22 +442,22 @@ export default function Checkout() {
                     {subscription.asset.name.charAt(0)}
                   </div>
                   <div className="min-w-0">
-                    <h4 className={`font-semibold truncate ${isDarkTheme ? 'text-white' : ''}`}>{subscription.asset.name}</h4>
-                    <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>{subscription.plan_name}</p>
+                    <h4 className={`font-semibold truncate ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{subscription.asset.name}</h4>
+                    <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-slate-500'}`}>{subscription.plan_name}</p>
                     <p className="text-sm font-medium mt-1" style={{ color: primaryColor }}>
                       {formattedAmount}
                     </p>
                   </div>
                 </div>
 
-                <div className={`border-t pt-4 space-y-3 ${isDarkTheme ? 'border-slate-600' : 'border-border'}`}>
+                <div className={`border-t pt-4 space-y-3 ${isDarkTheme ? 'border-slate-600' : 'border-slate-200'}`}>
                   <div className="flex justify-between text-sm">
-                    <span className={isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}>Subtotal</span>
-                    <span className={`font-medium ${isDarkTheme ? 'text-white' : ''}`}>{formattedAmount}</span>
+                    <span className={isDarkTheme ? 'text-slate-400' : 'text-slate-500'}>Subtotal</span>
+                    <span className={`font-medium ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{formattedAmount}</span>
                   </div>
                   
-                  <div className={`flex justify-between items-baseline pt-3 border-t ${isDarkTheme ? 'border-slate-600' : 'border-border'}`}>
-                    <span className={`font-semibold ${isDarkTheme ? 'text-white' : ''}`}>{t.total}</span>
+                  <div className={`flex justify-between items-baseline pt-3 border-t ${isDarkTheme ? 'border-slate-600' : 'border-slate-200'}`}>
+                    <span className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{t.total}</span>
                     <div className="text-right">
                       <span 
                         className="text-3xl font-bold"
@@ -470,7 +470,7 @@ export default function Checkout() {
                 </div>
 
                 {/* Security Badge */}
-                <div className={`flex items-center justify-center gap-2 text-xs rounded-xl p-4 mt-4 ${isDarkTheme ? 'text-slate-400 bg-slate-700/50' : 'text-muted-foreground bg-muted/30'}`}>
+                <div className={`flex items-center justify-center gap-2 text-xs rounded-xl p-4 mt-4 ${isDarkTheme ? 'text-slate-400 bg-slate-700/50' : 'text-slate-500 bg-slate-50'}`}>
                   <Shield className="h-5 w-5" style={{ color: primaryColor }} />
                   <span>{t.securePayment}</span>
                 </div>
@@ -478,9 +478,9 @@ export default function Checkout() {
             </Card>
 
             {subscription.asset.checkout_message && (
-              <Card className={`shadow-lg border-0 ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
+              <Card className={`shadow-lg border-0 ${isDarkTheme ? 'bg-slate-800/90' : 'bg-white'}`}>
                 <CardContent className="pt-6">
-                  <p className={`text-sm text-center italic ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                  <p className={`text-sm text-center italic ${isDarkTheme ? 'text-slate-400' : 'text-slate-500'}`}>
                     "{subscription.asset.checkout_message}"
                   </p>
                 </CardContent>
