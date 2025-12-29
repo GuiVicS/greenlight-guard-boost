@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,21 +29,27 @@ interface SubscriptionData {
   };
 }
 
-// Countries that support boleto
-const boletoCountries = ['BR'];
+interface PaymentMethodConfig {
+  method_name: string;
+  gateway_type: string;
+  is_enabled: boolean;
+}
 
 export default function Checkout() {
   const { assetId } = useParams();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get("return_url");
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "boleto">("card");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "boleto" | "pix">("card");
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [creatingIntent, setCreatingIntent] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodConfig[]>([]);
   const [customerData, setCustomerData] = useState({
     name: "",
     email: "",
@@ -52,7 +58,23 @@ export default function Checkout() {
 
   useEffect(() => {
     fetchSubscription();
+    fetchPaymentMethods();
   }, [assetId]);
+
+  const fetchPaymentMethods = async () => {
+    try {
+      const { data } = await supabase
+        .from("payment_methods_config")
+        .select("method_name, gateway_type, is_enabled")
+        .eq("is_enabled", true);
+
+      if (data) {
+        setPaymentMethods(data);
+      }
+    } catch (error) {
+      console.error("Error fetching payment methods:", error);
+    }
+  };
 
   const fetchSubscription = async () => {
     if (!assetId) return;
@@ -143,14 +165,17 @@ export default function Checkout() {
 
   const handleGoToPayment = () => {
     setCurrentStep(2);
-    if (subscription && !clientSecret) {
-      createPaymentIntent(paymentMethod);
+    if (subscription && !clientSecret && paymentMethod !== "pix") {
+      createPaymentIntent(paymentMethod as "card" | "boleto");
     }
   };
 
-  const handlePaymentMethodChange = (method: "card" | "boleto") => {
+  const handlePaymentMethodChange = (method: "card" | "boleto" | "pix") => {
     setPaymentMethod(method);
-    createPaymentIntent(method);
+    // Only create Stripe payment intent for card/boleto, not pix
+    if (method !== "pix") {
+      createPaymentIntent(method);
+    }
   };
 
   const handlePaymentSuccess = () => {
@@ -196,7 +221,8 @@ export default function Checkout() {
 
   const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
   const isDarkTheme = subscription.asset.checkout_theme === 'dark';
-  const showBoleto = boletoCountries.includes(country);
+  const showBoleto = paymentMethods.some(m => m.method_name === 'boleto' && m.is_enabled);
+  const showPix = paymentMethods.some(m => m.method_name === 'pix' && m.is_enabled);
   const formattedAmount = formatCurrency(subscription.monthly_value, country);
 
   if (paymentSuccess) {
@@ -315,6 +341,8 @@ export default function Checkout() {
                 primaryColor={primaryColor}
                 isDarkTheme={isDarkTheme}
                 showBoleto={showBoleto}
+                showPix={showPix}
+                returnUrl={returnUrl || undefined}
               />
             )}
           </div>

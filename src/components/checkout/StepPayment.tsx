@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, CreditCard, FileText, ArrowLeft, Wallet } from "lucide-react";
+import { Loader2, CreditCard, FileText, ArrowLeft, Wallet, QrCode } from "lucide-react";
 import { CardPaymentForm } from "./CardPaymentForm";
 import { BoletoPaymentForm } from "./BoletoPaymentForm";
+import { PixPaymentForm } from "./PixPaymentForm";
 import { getTranslations } from "@/lib/checkout-utils";
 
 interface StepPaymentProps {
@@ -23,13 +23,15 @@ interface StepPaymentProps {
   stripePromise: ReturnType<typeof loadStripe> | null;
   clientSecret: string | null;
   creatingIntent: boolean;
-  paymentMethod: "card" | "boleto";
-  onPaymentMethodChange: (method: "card" | "boleto") => void;
+  paymentMethod: "card" | "boleto" | "pix";
+  onPaymentMethodChange: (method: "card" | "boleto" | "pix") => void;
   onSuccess: () => void;
   onBack: () => void;
   primaryColor: string;
   isDarkTheme?: boolean;
   showBoleto: boolean;
+  showPix: boolean;
+  returnUrl?: string;
 }
 
 export function StepPayment({
@@ -45,10 +47,15 @@ export function StepPayment({
   primaryColor,
   isDarkTheme = false,
   showBoleto,
+  showPix,
+  returnUrl,
 }: StepPaymentProps) {
   const country = subscription.country || 'BR';
   const t = getTranslations(country);
   const locale = country === 'BR' ? 'pt-BR' : country === 'PT' ? 'pt' : country === 'ES' || country === 'MX' ? 'es' : 'en';
+
+  // Calculate grid columns based on available methods
+  const methodCount = 1 + (showBoleto ? 1 : 0) + (showPix ? 1 : 0);
 
   return (
     <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
@@ -73,93 +80,120 @@ export function StepPayment({
       </CardHeader>
 
       <CardContent className="pt-6">
-        <Tabs value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as "card" | "boleto")}>
-          <TabsList className={`grid w-full ${showBoleto ? 'grid-cols-2' : 'grid-cols-1'} mb-6 h-14 p-1 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/50'}`}>
+        <Tabs value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as "card" | "boleto" | "pix")}>
+          <TabsList className={`grid w-full mb-6 h-14 p-1 rounded-xl ${isDarkTheme ? 'bg-slate-700/50' : 'bg-muted/50'}`} style={{ gridTemplateColumns: `repeat(${methodCount}, 1fr)` }}>
             <TabsTrigger 
               value="card" 
               className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
             >
               <CreditCard className="h-5 w-5" />
-              <span className="font-medium">{t.creditCard}</span>
+              <span className="font-medium hidden sm:inline">{t.creditCard}</span>
             </TabsTrigger>
+            {showPix && (
+              <TabsTrigger 
+                value="pix" 
+                className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
+              >
+                <QrCode className="h-5 w-5" />
+                <span className="font-medium hidden sm:inline">Pix</span>
+              </TabsTrigger>
+            )}
             {showBoleto && (
               <TabsTrigger 
                 value="boleto" 
                 className={`flex items-center gap-2 h-12 rounded-lg data-[state=active]:shadow-md transition-all ${isDarkTheme ? 'data-[state=active]:bg-slate-600 text-white' : ''}`}
               >
                 <FileText className="h-5 w-5" />
-                <span className="font-medium">{t.boleto}</span>
+                <span className="font-medium hidden sm:inline">{t.boleto}</span>
               </TabsTrigger>
             )}
           </TabsList>
 
-          {creatingIntent ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-center">
-                <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" style={{ color: primaryColor }} />
-                <p className="text-muted-foreground">{t.processing}</p>
-              </div>
-            </div>
-          ) : stripePromise && clientSecret ? (
-            <Elements 
-              stripe={stripePromise} 
-              options={{ 
-                clientSecret,
-                appearance: {
-                  theme: isDarkTheme ? "night" : "stripe",
-                  variables: {
-                    colorPrimary: primaryColor,
-                    borderRadius: "12px",
-                    fontFamily: "system-ui, sans-serif",
-                    colorBackground: isDarkTheme ? "#1e293b" : "#ffffff",
-                    colorText: isDarkTheme ? "#ffffff" : "#1e293b",
-                  },
-                  rules: {
-                    ".Input": {
-                      border: isDarkTheme ? "1px solid #475569" : "1px solid #e2e8f0",
-                      boxShadow: "none",
-                      padding: "12px 16px",
-                      backgroundColor: isDarkTheme ? "#334155" : "#ffffff",
-                      color: isDarkTheme ? "#ffffff" : "#1e293b",
+          {/* PIX Tab - Uses Mercado Pago */}
+          <TabsContent value="pix" className="mt-0">
+            <PixPaymentForm
+              subscriptionId={subscription.id}
+              amount={subscription.monthly_value}
+              primaryColor={primaryColor}
+              customerData={customerData}
+              onSuccess={onSuccess}
+              isDarkTheme={isDarkTheme}
+              returnUrl={returnUrl}
+            />
+          </TabsContent>
+
+          {/* Card and Boleto Tabs - Use Stripe */}
+          {(paymentMethod === "card" || paymentMethod === "boleto") && (
+            <>
+              {creatingIntent ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" style={{ color: primaryColor }} />
+                    <p className="text-muted-foreground">{t.processing}</p>
+                  </div>
+                </div>
+              ) : stripePromise && clientSecret ? (
+                <Elements 
+                  stripe={stripePromise} 
+                  options={{ 
+                    clientSecret,
+                    appearance: {
+                      theme: isDarkTheme ? "night" : "stripe",
+                      variables: {
+                        colorPrimary: primaryColor,
+                        borderRadius: "12px",
+                        fontFamily: "system-ui, sans-serif",
+                        colorBackground: isDarkTheme ? "#1e293b" : "#ffffff",
+                        colorText: isDarkTheme ? "#ffffff" : "#1e293b",
+                      },
+                      rules: {
+                        ".Input": {
+                          border: isDarkTheme ? "1px solid #475569" : "1px solid #e2e8f0",
+                          boxShadow: "none",
+                          padding: "12px 16px",
+                          backgroundColor: isDarkTheme ? "#334155" : "#ffffff",
+                          color: isDarkTheme ? "#ffffff" : "#1e293b",
+                        },
+                        ".Input:focus": {
+                          border: `2px solid ${primaryColor}`,
+                          boxShadow: "none",
+                        },
+                        ".Label": {
+                          color: isDarkTheme ? "#cbd5e1" : "#64748b",
+                        },
+                      },
                     },
-                    ".Input:focus": {
-                      border: `2px solid ${primaryColor}`,
-                      boxShadow: "none",
-                    },
-                    ".Label": {
-                      color: isDarkTheme ? "#cbd5e1" : "#64748b",
-                    },
-                  },
-                },
-                locale: locale as any,
-              }}
-            >
-              <TabsContent value="card" className="mt-0">
-                <CardPaymentForm 
-                  amount={subscription.monthly_value}
-                  primaryColor={primaryColor}
-                  onSuccess={onSuccess}
-                  isDarkTheme={isDarkTheme}
-                  country={country}
-                />
-              </TabsContent>
-              <TabsContent value="boleto" className="mt-0">
-                <BoletoPaymentForm 
-                  clientSecret={clientSecret}
-                  amount={subscription.monthly_value}
-                  primaryColor={primaryColor}
-                  customerData={customerData}
-                  onSuccess={onSuccess}
-                  isDarkTheme={isDarkTheme}
-                />
-              </TabsContent>
-            </Elements>
-          ) : (
-            <div className={`text-center py-12 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-              {country === 'BR' 
-                ? 'Erro ao carregar formulário de pagamento. Tente novamente.'
-                : 'Error loading payment form. Please try again.'}
-            </div>
+                    locale: locale as any,
+                  }}
+                >
+                  <TabsContent value="card" className="mt-0">
+                    <CardPaymentForm 
+                      amount={subscription.monthly_value}
+                      primaryColor={primaryColor}
+                      onSuccess={onSuccess}
+                      isDarkTheme={isDarkTheme}
+                      country={country}
+                    />
+                  </TabsContent>
+                  <TabsContent value="boleto" className="mt-0">
+                    <BoletoPaymentForm 
+                      clientSecret={clientSecret}
+                      amount={subscription.monthly_value}
+                      primaryColor={primaryColor}
+                      customerData={customerData}
+                      onSuccess={onSuccess}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  </TabsContent>
+                </Elements>
+              ) : (
+                <div className={`text-center py-12 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                  {country === 'BR' 
+                    ? 'Erro ao carregar formulário de pagamento. Tente novamente.'
+                    : 'Error loading payment form. Please try again.'}
+                </div>
+              )}
+            </>
           )}
         </Tabs>
 
