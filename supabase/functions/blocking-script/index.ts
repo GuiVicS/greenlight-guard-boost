@@ -75,8 +75,9 @@ Deno.serve(async (req) => {
       .eq("status", "overdue")
       .single();
 
-    // Build checkout URL from app settings
+    // Build checkout URL from app settings with return_url parameter
     const baseUrl = appSettings?.checkout_base_url?.replace(/\/$/, "") || "";
+    // The return_url will be captured client-side and passed to checkout
     const checkoutUrl = baseUrl ? `${baseUrl}/checkout/${asset.id}` : "#";
 
     const primaryColor = asset.checkout_primary_color || "#dc2626";
@@ -123,9 +124,13 @@ Deno.serve(async (req) => {
 (function() {
   if (document.getElementById('asset-block-overlay')) return;
   
+  // Capture current URL for redirect after payment
+  var currentUrl = encodeURIComponent(window.location.href);
+  var checkoutUrlWithReturn = '${checkoutUrl}' + '?return_url=' + currentUrl;
+  
   var overlay = document.createElement('div');
   overlay.id = 'asset-block-overlay';
-  overlay.innerHTML = '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 2147483647; display: flex; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;"><div style="background: #1a1a1a; border-radius: 16px; padding: 48px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #333;">${logoHtml}<div style="width: 64px; height: 64px; background: ${primaryColor}20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${primaryColor}" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 16px;">${t.title}</h1><p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 32px;">${displayMessage}</p><a href="${checkoutUrl}" style="display: inline-block; background: ${primaryColor}; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">${t.buttonText}</a></div></div>';
+  overlay.innerHTML = '<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 2147483647; display: flex; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;"><div style="background: #1a1a1a; border-radius: 16px; padding: 48px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid #333;">${logoHtml}<div style="width: 64px; height: 64px; background: ${primaryColor}20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${primaryColor}" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 16px;">${t.title}</h1><p style="color: #a1a1aa; font-size: 16px; line-height: 1.6; margin: 0 0 32px;">${displayMessage}</p><a href="' + checkoutUrlWithReturn + '" style="display: inline-block; background: ${primaryColor}; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">${t.buttonText}</a></div></div>';
   
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';

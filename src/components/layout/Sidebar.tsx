@@ -30,7 +30,7 @@ const menuItems = [
 ];
 
 const adminItems = [
-  { icon: Zap, label: 'Integração Stripe', path: '/stripe-integration' },
+  { icon: CreditCard, label: 'Meios de Pagamento', path: '/payment-gateways' },
   { icon: Settings, label: 'Configurações', path: '/settings' },
 ];
 
