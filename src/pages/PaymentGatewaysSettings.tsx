@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -555,34 +555,43 @@ export default function PaymentGatewaysSettings() {
               </Button>
             </div>
 
-            {/* Mercado Pago Payment Methods */}
-            <div className="glass-card p-6 space-y-4">
-              <h3 className="font-medium text-foreground">Métodos de Pagamento</h3>
-              {paymentMethods.filter(m => m.gateway_type === 'mercadopago').map(method => (
-                <div key={method.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {method.method_name === 'pix' ? (
-                      <QrCode className="w-5 h-5 text-muted-foreground" />
-                    ) : method.method_name === 'card' ? (
-                      <CreditCard className="w-5 h-5 text-muted-foreground" />
-                    ) : (
-                      <FileText className="w-5 h-5 text-muted-foreground" />
-                    )}
-                    <span className="font-medium capitalize">
-                      {method.method_name === 'pix' 
-                        ? 'Pix' 
-                        : method.method_name === 'card' 
-                          ? 'Cartão (Crédito/Débito)' 
-                          : 'Boleto Bancário'}
-                    </span>
-                  </div>
-                  <Switch
-                    checked={method.is_enabled}
-                    onCheckedChange={() => togglePaymentMethod(method)}
-                  />
+            {(() => {
+              const mpMethods = paymentMethods
+                .filter((m) => m.gateway_type === 'mercadopago')
+                // dedupe por method_name (evita repetir Pix caso haja duplicata no banco/cache)
+                .reduce<PaymentMethodConfig[]>((acc, cur) => {
+                  if (acc.some((m) => m.method_name === cur.method_name)) return acc;
+                  acc.push(cur);
+                  return acc;
+                }, []);
+
+              return (
+                <div className="glass-card p-6 space-y-4">
+                  <h3 className="font-medium text-foreground">Métodos de Pagamento</h3>
+                  {mpMethods.map((method) => (
+                    <div key={method.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {method.method_name === 'pix' ? (
+                          <QrCode className="w-5 h-5 text-muted-foreground" />
+                        ) : method.method_name === 'card' ? (
+                          <CreditCard className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <FileText className="w-5 h-5 text-muted-foreground" />
+                        )}
+                        <span className="font-medium">
+                          {method.method_name === 'pix'
+                            ? 'Pix'
+                            : method.method_name === 'card'
+                              ? 'Cartão (Crédito/Débito)'
+                              : 'Boleto Bancário'}
+                        </span>
+                      </div>
+                      <Switch checked={method.is_enabled} onCheckedChange={() => togglePaymentMethod(method)} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
 
             {/* Webhook URL */}
             {mpSettings.is_configured && (
