@@ -110,22 +110,30 @@ export default function Checkout() {
         `)
         .eq("asset_id", assetId)
         .eq("status", "overdue")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      
+
+      // Se não houver assinatura em atraso para este asset, não é erro — apenas não há pagamento pendente.
+      if (!data) {
+        setHasError(false);
+        setSubscription(null);
+        return;
+      }
+
+      setHasError(false);
       const subscriptionData = data as unknown as SubscriptionData;
       setSubscription(subscriptionData);
-      
+
       // Apply custom checkout branding
       applyCheckoutBranding(subscriptionData);
-      
+
       // Pre-fill customer email if available
       if (subscriptionData.asset.client.email) {
-        setCustomerData(prev => ({ ...prev, email: subscriptionData.asset.client.email }));
+        setCustomerData((prev) => ({ ...prev, email: subscriptionData.asset.client.email }));
       }
       if (subscriptionData.asset.client.name) {
-        setCustomerData(prev => ({ ...prev, name: subscriptionData.asset.client.name }));
+        setCustomerData((prev) => ({ ...prev, name: subscriptionData.asset.client.name }));
       }
     } catch (error) {
       console.error("Error fetching subscription:", error);
