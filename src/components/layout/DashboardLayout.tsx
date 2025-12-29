@@ -58,7 +58,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <main 
         className={cn(
           "min-h-screen transition-all duration-300",
-          isMobile ? "pt-16 p-4" : "ml-64 p-8"
+          isMobile ? "pt-20 px-4 pb-4" : "ml-64 p-8"
         )}
       >
         {children}
