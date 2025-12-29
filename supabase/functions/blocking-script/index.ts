@@ -61,13 +61,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get app settings for checkout URL
-    const { data: appSettings } = await supabase
-      .from("app_settings")
-      .select("checkout_base_url")
-      .single();
-
-    // Get subscription to find the correct checkout URL
+    // Get subscription to find the country for translations
     const { data: subscription } = await supabase
       .from("subscriptions")
       .select("id, country")
@@ -75,18 +69,13 @@ Deno.serve(async (req) => {
       .eq("status", "overdue")
       .single();
 
-    // Build checkout URL
-    let checkoutUrl = "#";
-    if (appSettings?.checkout_base_url && subscription) {
-      const baseUrl = appSettings.checkout_base_url.replace(/\/$/, ""); // Remove trailing slash
-      checkoutUrl = `${baseUrl}/checkout/${asset.id}`;
-    }
+    // Build checkout URL using the Supabase URL as base
+    // Extract project ref from supabase URL (format: https://PROJECT_REF.supabase.co)
+    const projectRef = supabaseUrl.replace("https://", "").split(".")[0];
+    const checkoutUrl = `https://id-preview--${projectRef}.lovable.app/checkout/${asset.id}`;
 
     const primaryColor = asset.checkout_primary_color || "#dc2626";
     const logoUrl = asset.checkout_logo_url || "";
-    
-    // Priority: block_reason first (for manual blocks), then checkout_message, then default
-    const message = asset.block_reason || asset.checkout_message || "Este site está temporariamente bloqueado devido a pendências financeiras.";
 
     // Determine language based on subscription country
     const country = subscription?.country || "BR";
@@ -119,7 +108,9 @@ Deno.serve(async (req) => {
     };
 
     const t = translations[country] || translations.BR;
-    const displayMessage = asset.block_reason || asset.checkout_message || t.defaultMessage;
+    
+    // Only use checkout_message (custom message), NOT block_reason (internal use only)
+    const displayMessage = asset.checkout_message || t.defaultMessage;
 
     const logoHtml = logoUrl ? '<img src="' + logoUrl + '" alt="Logo" style="max-height: 60px; margin-bottom: 24px;" />' : '';
 
