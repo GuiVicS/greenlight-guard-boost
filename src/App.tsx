@@ -13,6 +13,7 @@ import Subscriptions from "./pages/Subscriptions";
 import Payments from "./pages/Payments";
 import Logs from "./pages/Logs";
 import StripeIntegration from "./pages/StripeIntegration";
+import PaymentGatewaysSettings from "./pages/PaymentGatewaysSettings";
 import Settings from "./pages/Settings";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -109,6 +110,14 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <StripeIntegration />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/payment-gateways"
+      element={
+        <ProtectedRoute>
+          <PaymentGatewaysSettings />
         </ProtectedRoute>
       }
     />

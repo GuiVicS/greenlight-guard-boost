@@ -159,6 +159,72 @@ export type Database = {
         }
         Relationships: []
       }
+      mercadopago_settings: {
+        Row: {
+          access_token_encrypted: string | null
+          created_at: string
+          id: string
+          is_configured: boolean | null
+          is_enabled: boolean
+          is_sandbox: boolean
+          sandbox_access_token_encrypted: string | null
+          updated_at: string
+          webhook_secret_encrypted: string | null
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_configured?: boolean | null
+          is_enabled?: boolean
+          is_sandbox?: boolean
+          sandbox_access_token_encrypted?: string | null
+          updated_at?: string
+          webhook_secret_encrypted?: string | null
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          created_at?: string
+          id?: string
+          is_configured?: boolean | null
+          is_enabled?: boolean
+          is_sandbox?: boolean
+          sandbox_access_token_encrypted?: string | null
+          updated_at?: string
+          webhook_secret_encrypted?: string | null
+        }
+        Relationships: []
+      }
+      payment_methods_config: {
+        Row: {
+          country: string
+          created_at: string
+          gateway_type: string
+          id: string
+          is_enabled: boolean
+          method_name: string
+          updated_at: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          gateway_type: string
+          id?: string
+          is_enabled?: boolean
+          method_name: string
+          updated_at?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          gateway_type?: string
+          id?: string
+          is_enabled?: boolean
+          method_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -232,6 +298,8 @@ export type Database = {
           created_at: string
           id: string
           is_configured: boolean | null
+          is_enabled: boolean
+          is_sandbox: boolean
           publishable_key: string | null
           secret_key_encrypted: string | null
           updated_at: string
@@ -241,6 +309,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_configured?: boolean | null
+          is_enabled?: boolean
+          is_sandbox?: boolean
           publishable_key?: string | null
           secret_key_encrypted?: string | null
           updated_at?: string
@@ -250,6 +320,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_configured?: boolean | null
+          is_enabled?: boolean
+          is_sandbox?: boolean
           publishable_key?: string | null
           secret_key_encrypted?: string | null
           updated_at?: string
