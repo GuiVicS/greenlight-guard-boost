@@ -108,20 +108,20 @@ export function PixPaymentForm({
   };
 
   const checkPaymentStatus = useCallback(async () => {
-    if (!pixData?.paymentId) return;
+    if (!pixData?.dbPaymentId) return;
     
     setCheckingStatus(true);
     try {
-      // Check if subscription status changed to active
+      // Check the specific payment status, not the subscription
       const { data, error } = await supabase
-        .from('subscriptions')
+        .from('payments')
         .select('status')
-        .eq('id', subscriptionId)
+        .eq('id', pixData.dbPaymentId)
         .single();
 
       if (error) throw error;
 
-      if (data.status === 'active') {
+      if (data.status === 'completed') {
         toast({
           title: 'Pagamento confirmado!',
           description: 'Seu pagamento foi aprovado',
@@ -133,7 +133,7 @@ export function PixPaymentForm({
     } finally {
       setCheckingStatus(false);
     }
-  }, [pixData?.paymentId, subscriptionId, onSuccess, toast]);
+  }, [pixData?.dbPaymentId, onSuccess, toast]);
 
   // Auto-check payment status every 5 seconds
   useEffect(() => {
