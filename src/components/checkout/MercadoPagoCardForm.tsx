@@ -6,6 +6,10 @@ import { Loader2, CreditCard, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/checkout-utils";
+import {
+  getEdgeFunctionErrorMessage,
+  translateMercadoPagoStatusDetail,
+} from "@/lib/edge-function-errors";
 
 interface MercadoPagoCardFormProps {
   subscriptionId: string;
@@ -239,7 +243,13 @@ export function MercadoPagoCardForm({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        const msg = await getEdgeFunctionErrorMessage(
+          error,
+          "Não foi possível processar o pagamento. Tente novamente."
+        );
+        throw new Error(msg);
+      }
 
       if (data.status === "approved") {
         toast({
@@ -254,9 +264,10 @@ export function MercadoPagoCardForm({
         });
         onSuccess();
       } else {
+        const translated = translateMercadoPagoStatusDetail(data.statusDetail);
         toast({
           title: "Pagamento não aprovado",
-          description: data.statusDetail || "Tente novamente ou use outro cartão.",
+          description: translated || data.statusDetail || "Tente novamente ou use outro cartão.",
           variant: "destructive",
         });
       }
