@@ -413,7 +413,7 @@ export function MercadoPagoCardForm({
       </Button>
 
       <p className={`text-xs text-center ${isDarkTheme ? "text-slate-500" : "text-muted-foreground"}`}>
-        🔒 Pagamento seguro - Dados tokenizados pelo Mercado Pago
+        🔒 Pagamento 100% seguro
       </p>
     </form>
   );
