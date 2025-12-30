@@ -86,6 +86,7 @@ export type Database = {
           client_id: string
           created_at: string
           id: string
+          infoproduct_url: string | null
           name: string
           public_key: string
           status: Database["public"]["Enums"]["asset_status"]
@@ -104,6 +105,7 @@ export type Database = {
           client_id: string
           created_at?: string
           id?: string
+          infoproduct_url?: string | null
           name: string
           public_key?: string
           status?: Database["public"]["Enums"]["asset_status"]
@@ -122,6 +124,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           id?: string
+          infoproduct_url?: string | null
           name?: string
           public_key?: string
           status?: Database["public"]["Enums"]["asset_status"]
@@ -691,7 +694,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "staff"
       asset_status: "active" | "blocked"
-      asset_type: "wordpress" | "shopify" | "custom" | "other"
+      asset_type: "wordpress" | "shopify" | "custom" | "other" | "infoproduct"
       payment_method: "pix" | "card" | "boleto"
       payment_status: "pending" | "completed" | "failed" | "refunded"
       subscription_status: "active" | "overdue" | "cancelled"
@@ -824,7 +827,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "staff"],
       asset_status: ["active", "blocked"],
-      asset_type: ["wordpress", "shopify", "custom", "other"],
+      asset_type: ["wordpress", "shopify", "custom", "other", "infoproduct"],
       payment_method: ["pix", "card", "boleto"],
       payment_status: ["pending", "completed", "failed", "refunded"],
       subscription_status: ["active", "overdue", "cancelled"],
