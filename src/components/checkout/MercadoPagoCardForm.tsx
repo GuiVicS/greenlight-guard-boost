@@ -41,6 +41,7 @@ export function MercadoPagoCardForm({
   const [sdkLoading, setSdkLoading] = useState(true);
   const [mpInstance, setMpInstance] = useState<any>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
   const [cardFormInstance, setCardFormInstance] = useState<any>(null);
 
   // Form state (only for display, not for sending raw data)
@@ -57,19 +58,29 @@ export function MercadoPagoCardForm({
   useEffect(() => {
     const fetchPublicKey = async () => {
       try {
-        // We need to fetch the public key from a secure endpoint
+        setInitError(null);
+
+        // Fetch the public key from backend
         const { data, error } = await supabase.functions.invoke("get-mercadopago-public-key");
-        
+
         if (error) throw error;
-        
+
         if (data?.publicKey) {
           setPublicKey(data.publicKey);
         } else {
-          console.error("No public key returned");
+          const hint = data?.hint
+            ? String(data.hint)
+            : "Chave pública do Mercado Pago não configurada.";
+          setInitError(hint);
+          console.error("No public key returned", data);
           setSdkLoading(false);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching MP public key:", error);
+        setInitError(
+          error?.message ||
+            "Não foi possível carregar as configurações do Mercado Pago."
+        );
         setSdkLoading(false);
       }
     };
@@ -274,12 +285,12 @@ export function MercadoPagoCardForm({
 
   if (!publicKey || !mpInstance) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-8 space-y-2">
         <p className="text-muted-foreground">
           Pagamento com cartão indisponível no momento.
         </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Por favor, tente outro método de pagamento.
+        <p className="text-sm text-muted-foreground">
+          {initError || "Por favor, tente outro método de pagamento."}
         </p>
       </div>
     );
