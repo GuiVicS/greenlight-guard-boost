@@ -33,67 +33,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // The access token contains the public key information
-    // For Mercado Pago, the public key is typically stored separately or derived
-    // In this implementation, we need to fetch it from the credentials
-    
-    // Get the access token based on sandbox mode
-    const accessToken = mpSettings.is_sandbox 
-      ? mpSettings.sandbox_access_token_encrypted 
-      : mpSettings.access_token_encrypted;
+    // Get the public key based on sandbox mode
+    const publicKey = mpSettings.is_sandbox 
+      ? mpSettings.sandbox_public_key 
+      : mpSettings.public_key;
 
-    if (!accessToken) {
-      return new Response(
-        JSON.stringify({ error: "Access token not configured" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Fetch public key from Mercado Pago API
-    const credentialsResponse = await fetch(
-      "https://api.mercadopago.com/users/me",
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-
-    if (!credentialsResponse.ok) {
-      console.error("Failed to fetch MP credentials");
-      throw new Error("Failed to fetch payment credentials");
-    }
-
-    const credentials = await credentialsResponse.json();
-    
-    // The public key can be obtained from the live_credentials or test_credentials
-    // For sandbox mode, use test credentials
-    let publicKey: string | null = null;
-
-    // Try to get public key from credential endpoints
-    const publicKeyResponse = await fetch(
-      "https://api.mercadopago.com/plugins-credentials-wrapper/credentials",
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-
-    if (publicKeyResponse.ok) {
-      const credData = await publicKeyResponse.json();
-      publicKey = mpSettings.is_sandbox 
-        ? credData.sandbox_public_key || credData.public_key
-        : credData.public_key;
-    }
-
-    // If we couldn't get the public key, return error
     if (!publicKey) {
-      console.error("Could not retrieve public key from Mercado Pago");
+      console.error("Public key not configured in mercadopago_settings");
       return new Response(
         JSON.stringify({ 
-          error: "Public key not available",
-          hint: "Please ensure your Mercado Pago account has API credentials configured"
+          error: "Public key not configured",
+          hint: "Please add your Mercado Pago public key in the payment gateway settings"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

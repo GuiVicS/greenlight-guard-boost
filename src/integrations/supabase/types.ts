@@ -271,7 +271,9 @@ export type Database = {
           is_configured: boolean | null
           is_enabled: boolean
           is_sandbox: boolean
+          public_key: string | null
           sandbox_access_token_encrypted: string | null
+          sandbox_public_key: string | null
           updated_at: string
           webhook_secret_encrypted: string | null
         }
@@ -282,7 +284,9 @@ export type Database = {
           is_configured?: boolean | null
           is_enabled?: boolean
           is_sandbox?: boolean
+          public_key?: string | null
           sandbox_access_token_encrypted?: string | null
+          sandbox_public_key?: string | null
           updated_at?: string
           webhook_secret_encrypted?: string | null
         }
@@ -293,7 +297,9 @@ export type Database = {
           is_configured?: boolean | null
           is_enabled?: boolean
           is_sandbox?: boolean
+          public_key?: string | null
           sandbox_access_token_encrypted?: string | null
+          sandbox_public_key?: string | null
           updated_at?: string
           webhook_secret_encrypted?: string | null
         }
