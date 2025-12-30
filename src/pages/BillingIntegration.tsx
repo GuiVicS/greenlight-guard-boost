@@ -38,30 +38,30 @@ interface BillingSettings {
   notification_days_before_block: number;
 }
 
-const defaultEmailTemplate = `Olá {nome}!
+const defaultEmailTemplate = `Olá {{client_name}}!
 
 Identificamos que o pagamento da sua assinatura está pendente.
 
-Plano: {plano}
-Valor: R$ {valor}
-Vencimento: {vencimento}
+Plano: {{plan_name}}
+Valor: R$ {{amount}}
+Vencimento: {{due_date}}
 
 Regularize agora clicando no link abaixo:
-{link_checkout}
+{{checkout_link}}
 
-Após {dias_restantes} dia(s) sem pagamento, seu serviço será suspenso.
+Após {{days_remaining}} dia(s) sem pagamento, seu serviço será suspenso.
 
 Atenciosamente,
 Equipe SiteGuard`;
 
-const defaultWhatsAppTemplate = `Olá {nome}! 👋
+const defaultWhatsAppTemplate = `Olá {{client_name}}! 👋
 
-Seu pagamento de R$ {valor} do plano *{plano}* está pendente desde {vencimento}.
+Seu pagamento de R$ {{amount}} do plano *{{plan_name}}* está pendente desde {{due_date}}.
 
 🔗 Regularize agora e evite a suspensão do serviço:
-{link_checkout}
+{{checkout_link}}
 
-⏰ Você tem {dias_restantes} dia(s) para regularizar.
+⏰ Você tem {{days_remaining}} dia(s) para regularizar.
 
 Qualquer dúvida, estamos à disposição!`;
 
@@ -77,7 +77,7 @@ export default function BillingIntegration() {
     evolution_instance: '',
     sender_email: '',
     sender_name: '',
-    email_subject_template: 'Pagamento pendente - {plano}',
+    email_subject_template: 'Pagamento pendente - {{plan_name}}',
     email_message_template: defaultEmailTemplate,
     whatsapp_message_template: defaultWhatsAppTemplate,
     max_auto_charge_attempts: 4,
@@ -106,7 +106,7 @@ export default function BillingIntegration() {
           evolution_instance: data.evolution_instance || '',
           sender_email: data.sender_email || '',
           sender_name: data.sender_name || '',
-          email_subject_template: data.email_subject_template || 'Pagamento pendente - {plano}',
+          email_subject_template: data.email_subject_template || 'Pagamento pendente - {{plan_name}}',
           email_message_template: data.email_message_template || defaultEmailTemplate,
           whatsapp_message_template: data.whatsapp_message_template || defaultWhatsAppTemplate,
           max_auto_charge_attempts: data.max_auto_charge_attempts || 4,
@@ -315,7 +315,7 @@ export default function BillingIntegration() {
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Variáveis: {'{nome}'}, {'{plano}'}, {'{valor}'}, {'{vencimento}'}, {'{link_checkout}'}, {'{dias_restantes}'}
+                    Variáveis: {'{{client_name}}'}, {'{{plan_name}}'}, {'{{amount}}'}, {'{{due_date}}'}, {'{{checkout_link}}'}, {'{{days_remaining}}'}
                   </p>
                 </div>
               </div>
@@ -368,7 +368,7 @@ export default function BillingIntegration() {
                   <Input
                     value={settings.email_subject_template}
                     onChange={(e) => setSettings(prev => ({ ...prev, email_subject_template: e.target.value }))}
-                    placeholder="Pagamento pendente - {plano}"
+                    placeholder="Pagamento pendente - {{plan_name}}"
                   />
                 </div>
 
@@ -381,7 +381,7 @@ export default function BillingIntegration() {
                     className="font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Variáveis: {'{nome}'}, {'{plano}'}, {'{valor}'}, {'{vencimento}'}, {'{link_checkout}'}, {'{dias_restantes}'}
+                    Variáveis: {'{{client_name}}'}, {'{{plan_name}}'}, {'{{amount}}'}, {'{{due_date}}'}, {'{{checkout_link}}'}, {'{{days_remaining}}'}
                   </p>
                 </div>
               </div>

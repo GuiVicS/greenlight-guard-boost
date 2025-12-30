@@ -29,6 +29,7 @@ interface OverdueSubscription {
   notification_days_count: number;
   last_charge_attempt: string | null;
   auto_charge_enabled: boolean;
+  stripe_customer_id: string | null;
   assets: {
     id: string;
     name: string;
@@ -79,6 +80,14 @@ Deno.serve(async (req) => {
       notification_days_before_block: settings.notification_days_before_block,
     });
 
+    // Get checkout base URL from app settings
+    const { data: appSettings } = await supabase
+      .from("app_settings")
+      .select("checkout_base_url")
+      .maybeSingle();
+
+    const checkoutBaseUrl = appSettings?.checkout_base_url || supabaseUrl.replace('.supabase.co', '.lovable.app');
+
     // Find all active subscriptions that are past due date
     const { data: overdueSubscriptions, error: fetchError } = await supabase
       .from("subscriptions")
@@ -93,6 +102,7 @@ Deno.serve(async (req) => {
         notification_days_count,
         last_charge_attempt,
         auto_charge_enabled,
+        stripe_customer_id,
         assets!inner (
           id,
           name,
@@ -116,6 +126,7 @@ Deno.serve(async (req) => {
     const results = {
       checked: 0,
       auto_charge_attempts: 0,
+      auto_charge_success: 0,
       notifications_sent: 0,
       blocked: 0,
       errors: [] as string[],
@@ -131,39 +142,43 @@ Deno.serve(async (req) => {
       console.log(`Plan: ${sub.plan_name}, Due: ${sub.due_date}`);
       console.log(`Failed charges: ${failedCount}, Notification days: ${notificationDays}`);
 
+      const checkoutUrl = `${checkoutBaseUrl}/checkout/${sub.asset_id}`;
+      const daysRemaining = settings.notification_days_before_block - notificationDays;
+
       // PHASE 1: Auto-charge attempts (if enabled)
       if (settings.is_enabled && sub.auto_charge_enabled && failedCount < settings.max_auto_charge_attempts) {
         console.log(`Attempting auto-charge (attempt ${failedCount + 1}/${settings.max_auto_charge_attempts})`);
         
-        // TODO: Implement actual auto-charge via Stripe/MercadoPago
-        // For now, we just log the attempt and increment the counter
-        
-        await supabase.from("billing_attempts").insert({
-          subscription_id: sub.id,
-          attempt_type: "auto_charge",
-          attempt_number: failedCount + 1,
-          status: "pending",
-          sent_to: client?.email,
-          metadata: {
-            plan_name: sub.plan_name,
-            amount: sub.monthly_value,
+        try {
+          // Call the auto-charge function
+          const { data: chargeResult, error: chargeError } = await supabase.functions.invoke("process-auto-charge", {
+            body: {
+              subscriptionId: sub.id,
+              attemptNumber: failedCount + 1,
+            },
+          });
+
+          if (chargeError) {
+            console.error("Auto-charge invocation error:", chargeError);
+            results.errors.push(`Sub ${sub.id}: ${chargeError.message}`);
+          } else if (chargeResult?.success) {
+            console.log(`Auto-charge successful for ${sub.id}`);
+            results.auto_charge_success++;
+            results.auto_charge_attempts++;
+            continue; // Payment successful, move to next subscription
+          } else {
+            console.log(`Auto-charge failed for ${sub.id}: ${chargeResult?.error}`);
           }
-        });
 
-        // Increment failed charge count (simulating failed charge)
-        await supabase
-          .from("subscriptions")
-          .update({
-            failed_charge_count: failedCount + 1,
-            last_charge_attempt: new Date().toISOString(),
-          })
-          .eq("id", sub.id);
-
-        results.auto_charge_attempts++;
-        continue; // Wait for next cycle
+          results.auto_charge_attempts++;
+          continue; // Wait for next cycle after charge attempt
+        } catch (chargeErr: any) {
+          console.error("Auto-charge error:", chargeErr);
+          results.errors.push(`Sub ${sub.id} auto-charge: ${chargeErr.message}`);
+        }
       }
 
-      // PHASE 2: Notification period (after max auto-charge attempts)
+      // PHASE 2: Notification period (after max auto-charge attempts or auto-charge disabled)
       if (settings.is_enabled && notificationDays < settings.notification_days_before_block) {
         console.log(`Sending notifications (day ${notificationDays + 1}/${settings.notification_days_before_block})`);
         
@@ -175,21 +190,9 @@ Deno.serve(async (req) => {
             .eq("id", sub.id);
         }
 
-        // Get app settings for checkout URL
-        const { data: appSettings } = await supabase
-          .from("app_settings")
-          .select("checkout_base_url")
-          .maybeSingle();
-
-        const checkoutUrl = appSettings?.checkout_base_url 
-          ? `${appSettings.checkout_base_url}/checkout/${sub.asset_id}`
-          : `https://siteguard.lovable.app/checkout/${sub.asset_id}`;
-
-        const daysRemaining = settings.notification_days_before_block - notificationDays;
-
         // Send Email notification
         if (settings.sender_email && client?.email) {
-          await supabase.from("billing_attempts").insert({
+          const { data: emailAttempt } = await supabase.from("billing_attempts").insert({
             subscription_id: sub.id,
             attempt_type: "email",
             attempt_number: notificationDays + 1,
@@ -201,13 +204,37 @@ Deno.serve(async (req) => {
               checkout_url: checkoutUrl,
               days_remaining: daysRemaining,
             }
-          });
-          console.log(`Email notification queued for ${client.email}`);
+          }).select().single();
+
+          // Invoke email sending function
+          try {
+            await supabase.functions.invoke("send-billing-email", {
+              body: {
+                attemptId: emailAttempt?.id,
+                to: client.email,
+                clientName: client.name,
+                planName: sub.plan_name,
+                amount: sub.monthly_value,
+                dueDate: sub.due_date,
+                checkoutUrl,
+                daysRemaining,
+              },
+            });
+            console.log(`Email sent to ${client.email}`);
+          } catch (emailErr: any) {
+            console.error(`Failed to send email to ${client.email}:`, emailErr);
+            if (emailAttempt?.id) {
+              await supabase
+                .from("billing_attempts")
+                .update({ status: "failed", error_message: emailErr.message })
+                .eq("id", emailAttempt.id);
+            }
+          }
         }
 
         // Send WhatsApp notification
         if (settings.evolution_api_url && settings.evolution_instance && client?.phone) {
-          await supabase.from("billing_attempts").insert({
+          const { data: whatsappAttempt } = await supabase.from("billing_attempts").insert({
             subscription_id: sub.id,
             attempt_type: "whatsapp",
             attempt_number: notificationDays + 1,
@@ -219,8 +246,32 @@ Deno.serve(async (req) => {
               checkout_url: checkoutUrl,
               days_remaining: daysRemaining,
             }
-          });
-          console.log(`WhatsApp notification queued for ${client.phone}`);
+          }).select().single();
+
+          // Invoke WhatsApp sending function
+          try {
+            await supabase.functions.invoke("send-billing-whatsapp", {
+              body: {
+                attemptId: whatsappAttempt?.id,
+                phone: client.phone,
+                clientName: client.name,
+                planName: sub.plan_name,
+                amount: sub.monthly_value,
+                dueDate: sub.due_date,
+                checkoutUrl,
+                daysRemaining,
+              },
+            });
+            console.log(`WhatsApp sent to ${client.phone}`);
+          } catch (whatsappErr: any) {
+            console.error(`Failed to send WhatsApp to ${client.phone}:`, whatsappErr);
+            if (whatsappAttempt?.id) {
+              await supabase
+                .from("billing_attempts")
+                .update({ status: "failed", error_message: whatsappErr.message })
+                .eq("id", whatsappAttempt.id);
+            }
+          }
         }
 
         // Increment notification days count

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,58 +38,166 @@ export function MercadoPagoCardForm({
 }: MercadoPagoCardFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [sdkLoading, setSdkLoading] = useState(true);
+  const [mpInstance, setMpInstance] = useState<any>(null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
-  const [cardForm, setCardForm] = useState<any>(null);
+  const [cardFormInstance, setCardFormInstance] = useState<any>(null);
 
-  // Form state
+  // Form state (only for display, not for sending raw data)
   const [cardNumber, setCardNumber] = useState("");
   const [cardholderName, setCardholderName] = useState(customerData.name);
-  const [expirationMonth, setExpirationMonth] = useState("");
-  const [expirationYear, setExpirationYear] = useState("");
+  const [expirationDate, setExpirationDate] = useState("");
   const [securityCode, setSecurityCode] = useState("");
   const [installments, setInstallments] = useState(1);
+  const [identificationNumber, setIdentificationNumber] = useState(customerData.document);
+  const [paymentMethodId, setPaymentMethodId] = useState<string | null>(null);
+  const [issuerId, setIssuerId] = useState<string | null>(null);
 
+  // Fetch Mercado Pago public key
   useEffect(() => {
+    const fetchPublicKey = async () => {
+      try {
+        // We need to fetch the public key from a secure endpoint
+        const { data, error } = await supabase.functions.invoke("get-mercadopago-public-key");
+        
+        if (error) throw error;
+        
+        if (data?.publicKey) {
+          setPublicKey(data.publicKey);
+        } else {
+          console.error("No public key returned");
+          setSdkLoading(false);
+        }
+      } catch (error) {
+        console.error("Error fetching MP public key:", error);
+        setSdkLoading(false);
+      }
+    };
+
     fetchPublicKey();
   }, []);
 
+  // Load Mercado Pago SDK
   useEffect(() => {
-    if (publicKey && !sdkLoaded) {
-      loadMercadoPagoSDK();
-    }
+    if (!publicKey) return;
+
+    const loadSDK = async () => {
+      // Check if SDK is already loaded
+      if (window.MercadoPago) {
+        const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
+        setMpInstance(mp);
+        setSdkLoading(false);
+        return;
+      }
+
+      // Load SDK script
+      const script = document.createElement("script");
+      script.src = "https://sdk.mercadopago.com/js/v2";
+      script.async = true;
+      script.onload = () => {
+        const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
+        setMpInstance(mp);
+        setSdkLoading(false);
+      };
+      script.onerror = () => {
+        console.error("Failed to load Mercado Pago SDK");
+        setSdkLoading(false);
+      };
+      document.head.appendChild(script);
+    };
+
+    loadSDK();
   }, [publicKey]);
 
-  const fetchPublicKey = async () => {
-    try {
-      const { data: mpSettings } = await supabase
-        .from("mercadopago_settings")
-        .select("access_token_encrypted, sandbox_access_token_encrypted, is_sandbox, is_configured")
-        .eq("is_configured", true)
-        .maybeSingle();
+  // Get payment method info when card number changes
+  const getPaymentMethod = useCallback(async (bin: string) => {
+    if (!mpInstance || bin.length < 6) return;
 
-      if (mpSettings) {
-        // For frontend, we'll use a simple approach - the backend handles the actual token
-        setSdkLoaded(true);
+    try {
+      const response = await mpInstance.getPaymentMethods({ bin });
+      if (response.results && response.results.length > 0) {
+        const pm = response.results[0];
+        setPaymentMethodId(pm.id);
+        setIssuerId(pm.issuer?.id || null);
       }
     } catch (error) {
-      console.error("Error fetching MP settings:", error);
+      console.error("Error getting payment method:", error);
+    }
+  }, [mpInstance]);
+
+  // Handle card number change
+  const handleCardNumberChange = (value: string) => {
+    const cleanValue = value.replace(/\s/g, "").replace(/\D/g, "");
+    const formatted = cleanValue.replace(/(\d{4})/g, "$1 ").trim();
+    setCardNumber(formatted);
+
+    // Get payment method when we have at least 6 digits
+    if (cleanValue.length >= 6) {
+      getPaymentMethod(cleanValue.substring(0, 6));
     }
   };
 
-  const loadMercadoPagoSDK = async () => {
-    if (window.MercadoPago) {
-      setSdkLoaded(true);
-      return;
+  // Handle expiration date change
+  const handleExpirationChange = (value: string) => {
+    const cleanValue = value.replace(/\D/g, "");
+    if (cleanValue.length <= 2) {
+      setExpirationDate(cleanValue);
+    } else {
+      setExpirationDate(`${cleanValue.substring(0, 2)}/${cleanValue.substring(2, 4)}`);
+    }
+  };
+
+  // Create card token using SDK (PCI-DSS compliant)
+  const createCardToken = async (): Promise<string | null> => {
+    if (!mpInstance) {
+      toast({
+        title: "Erro",
+        description: "SDK do Mercado Pago não carregado",
+        variant: "destructive",
+      });
+      return null;
     }
 
-    const script = document.createElement("script");
-    script.src = "https://sdk.mercadopago.com/js/v2";
-    script.async = true;
-    script.onload = () => {
-      setSdkLoaded(true);
-    };
-    document.head.appendChild(script);
+    try {
+      const [month, year] = expirationDate.split("/");
+      const cardData = {
+        cardNumber: cardNumber.replace(/\s/g, ""),
+        cardholderName: cardholderName,
+        cardExpirationMonth: month,
+        cardExpirationYear: `20${year}`,
+        securityCode: securityCode,
+        identificationType: "CPF",
+        identificationNumber: identificationNumber.replace(/\D/g, ""),
+      };
+
+      const response = await mpInstance.createCardToken(cardData);
+      
+      if (response.id) {
+        return response.id;
+      } else {
+        throw new Error("Token não gerado");
+      }
+    } catch (error: any) {
+      console.error("Error creating card token:", error);
+      
+      let errorMessage = "Não foi possível processar os dados do cartão";
+      if (error.message) {
+        if (error.message.includes("cardNumber")) {
+          errorMessage = "Número do cartão inválido";
+        } else if (error.message.includes("securityCode")) {
+          errorMessage = "Código de segurança inválido";
+        } else if (error.message.includes("cardExpiration")) {
+          errorMessage = "Data de validade inválida";
+        }
+      }
+      
+      toast({
+        title: "Erro nos dados do cartão",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return null;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,22 +205,25 @@ export function MercadoPagoCardForm({
     setLoading(true);
 
     try {
-      // For Mercado Pago card payments, we'll send the card data to the backend
-      // In a production environment, you'd use the MP SDK to tokenize the card first
+      // Create token using SDK (card data never leaves the browser unencrypted)
+      const cardToken = await createCardToken();
+      
+      if (!cardToken) {
+        setLoading(false);
+        return;
+      }
+
+      // Send only the token to the backend, never raw card data
       const { data, error } = await supabase.functions.invoke("create-mercadopago-payment", {
         body: {
           subscriptionId,
           customerEmail: customerData.email,
           customerName: customerData.name,
-          customerDocument: customerData.document,
+          customerDocument: identificationNumber,
           paymentMethod: "card",
-          cardData: {
-            cardNumber: cardNumber.replace(/\s/g, ""),
-            cardholderName,
-            expirationMonth,
-            expirationYear,
-            securityCode,
-          },
+          cardToken,
+          paymentMethodId,
+          issuerId,
           installments,
         },
       });
@@ -130,7 +241,6 @@ export function MercadoPagoCardForm({
           title: "Pagamento em processamento",
           description: "Seu pagamento está sendo analisado.",
         });
-        // Still call success to move forward
         onSuccess();
       } else {
         toast({
@@ -151,18 +261,29 @@ export function MercadoPagoCardForm({
     }
   };
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || "";
-    const parts = [];
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-    return parts.length ? parts.join(" ") : value;
-  };
-
   const formattedAmount = formatCurrency(amount, country);
+
+  if (sdkLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">Carregando formulário seguro...</span>
+      </div>
+    );
+  }
+
+  if (!publicKey || !mpInstance) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">
+          Pagamento com cartão indisponível no momento.
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Por favor, tente outro método de pagamento.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -175,10 +296,11 @@ export function MercadoPagoCardForm({
           <Input
             type="text"
             value={cardNumber}
-            onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+            onChange={(e) => handleCardNumberChange(e.target.value)}
             placeholder="0000 0000 0000 0000"
             maxLength={19}
             className={`pl-10 ${isDarkTheme ? "bg-slate-700 border-slate-600 text-white" : ""}`}
+            autoComplete="cc-number"
             required
           />
         </div>
@@ -194,32 +316,22 @@ export function MercadoPagoCardForm({
           onChange={(e) => setCardholderName(e.target.value.toUpperCase())}
           placeholder="NOME COMO NO CARTÃO"
           className={isDarkTheme ? "bg-slate-700 border-slate-600 text-white" : ""}
+          autoComplete="cc-name"
           required
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className={isDarkTheme ? "text-slate-300" : ""}>Mês</Label>
+          <Label className={isDarkTheme ? "text-slate-300" : ""}>Validade</Label>
           <Input
             type="text"
-            value={expirationMonth}
-            onChange={(e) => setExpirationMonth(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            placeholder="MM"
-            maxLength={2}
+            value={expirationDate}
+            onChange={(e) => handleExpirationChange(e.target.value)}
+            placeholder="MM/AA"
+            maxLength={5}
             className={isDarkTheme ? "bg-slate-700 border-slate-600 text-white" : ""}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className={isDarkTheme ? "text-slate-300" : ""}>Ano</Label>
-          <Input
-            type="text"
-            value={expirationYear}
-            onChange={(e) => setExpirationYear(e.target.value.replace(/\D/g, "").slice(0, 2))}
-            placeholder="AA"
-            maxLength={2}
-            className={isDarkTheme ? "bg-slate-700 border-slate-600 text-white" : ""}
+            autoComplete="cc-exp"
             required
           />
         </div>
@@ -232,9 +344,22 @@ export function MercadoPagoCardForm({
             placeholder="123"
             maxLength={4}
             className={isDarkTheme ? "bg-slate-700 border-slate-600 text-white" : ""}
+            autoComplete="cc-csc"
             required
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className={isDarkTheme ? "text-slate-300" : ""}>CPF do Titular</Label>
+        <Input
+          type="text"
+          value={identificationNumber}
+          onChange={(e) => setIdentificationNumber(e.target.value)}
+          placeholder="000.000.000-00"
+          className={isDarkTheme ? "bg-slate-700 border-slate-600 text-white" : ""}
+          required
+        />
       </div>
 
       <div className="space-y-2">
@@ -259,7 +384,7 @@ export function MercadoPagoCardForm({
 
       <Button
         type="submit"
-        disabled={loading}
+        disabled={loading || !mpInstance}
         className="w-full h-14 text-lg font-semibold text-white shadow-lg transition-all hover:scale-[1.02]"
         style={{ backgroundColor: primaryColor }}
       >
@@ -277,7 +402,7 @@ export function MercadoPagoCardForm({
       </Button>
 
       <p className={`text-xs text-center ${isDarkTheme ? "text-slate-500" : "text-muted-foreground"}`}>
-        🔒 Pagamento seguro processado pelo Mercado Pago
+        🔒 Pagamento seguro - Dados tokenizados pelo Mercado Pago
       </p>
     </form>
   );
