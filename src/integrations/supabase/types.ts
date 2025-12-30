@@ -138,6 +138,98 @@ export type Database = {
           },
         ]
       }
+      billing_attempts: {
+        Row: {
+          attempt_number: number
+          attempt_type: string
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          sent_to: string | null
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          attempt_number?: number
+          attempt_type: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_to?: string | null
+          status?: string
+          subscription_id: string
+        }
+        Update: {
+          attempt_number?: number
+          attempt_type?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_to?: string | null
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_attempts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_settings: {
+        Row: {
+          created_at: string
+          email_message_template: string | null
+          email_subject_template: string | null
+          evolution_api_url: string | null
+          evolution_instance: string | null
+          id: string
+          is_enabled: boolean | null
+          max_auto_charge_attempts: number | null
+          notification_days_before_block: number | null
+          sender_email: string | null
+          sender_name: string | null
+          updated_at: string
+          whatsapp_message_template: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_message_template?: string | null
+          email_subject_template?: string | null
+          evolution_api_url?: string | null
+          evolution_instance?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_auto_charge_attempts?: number | null
+          notification_days_before_block?: number | null
+          sender_email?: string | null
+          sender_name?: string | null
+          updated_at?: string
+          whatsapp_message_template?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_message_template?: string | null
+          email_subject_template?: string | null
+          evolution_api_url?: string | null
+          evolution_instance?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          max_auto_charge_attempts?: number | null
+          notification_days_before_block?: number | null
+          sender_email?: string | null
+          sender_name?: string | null
+          updated_at?: string
+          whatsapp_message_template?: string | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           created_at: string
@@ -385,9 +477,13 @@ export type Database = {
           country: string
           created_at: string
           due_date: string
+          failed_charge_count: number | null
           id: string
+          last_charge_attempt: string | null
           monthly_value: number
           next_billing_date: string | null
+          notification_days_count: number | null
+          notification_started_at: string | null
           plan_name: string
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
@@ -402,9 +498,13 @@ export type Database = {
           country?: string
           created_at?: string
           due_date: string
+          failed_charge_count?: number | null
           id?: string
+          last_charge_attempt?: string | null
           monthly_value: number
           next_billing_date?: string | null
+          notification_days_count?: number | null
+          notification_started_at?: string | null
           plan_name: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
@@ -419,9 +519,13 @@ export type Database = {
           country?: string
           created_at?: string
           due_date?: string
+          failed_charge_count?: number | null
           id?: string
+          last_charge_attempt?: string | null
           monthly_value?: number
           next_billing_date?: string | null
+          notification_days_count?: number | null
+          notification_started_at?: string | null
           plan_name?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
