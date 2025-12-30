@@ -37,6 +37,8 @@ interface MercadoPagoSettings {
   access_token_encrypted: string | null;
   sandbox_access_token_encrypted: string | null;
   webhook_secret_encrypted: string | null;
+  public_key: string | null;
+  sandbox_public_key: string | null;
   is_configured: boolean;
   is_enabled: boolean;
   is_sandbox: boolean;
@@ -71,6 +73,8 @@ export default function PaymentGatewaysSettings() {
     access_token_encrypted: null,
     sandbox_access_token_encrypted: null,
     webhook_secret_encrypted: null,
+    public_key: null,
+    sandbox_public_key: null,
     is_configured: false,
     is_enabled: false,
     is_sandbox: true,
@@ -81,6 +85,8 @@ export default function PaymentGatewaysSettings() {
   const [stripeWebhookSecret, setStripeWebhookSecret] = useState('');
   const [mpAccessToken, setMPAccessToken] = useState('');
   const [mpSandboxToken, setMPSandboxToken] = useState('');
+  const [mpPublicKey, setMPPublicKey] = useState('');
+  const [mpSandboxPublicKey, setMPSandboxPublicKey] = useState('');
 
   const { toast } = useToast();
 
@@ -120,6 +126,8 @@ export default function PaymentGatewaysSettings() {
           access_token_encrypted: mpData.access_token_encrypted,
           sandbox_access_token_encrypted: mpData.sandbox_access_token_encrypted,
           webhook_secret_encrypted: mpData.webhook_secret_encrypted,
+          public_key: mpData.public_key || null,
+          sandbox_public_key: mpData.sandbox_public_key || null,
           is_configured: mpData.is_configured || false,
           is_enabled: mpData.is_enabled ?? false,
           is_sandbox: mpData.is_sandbox ?? true,
@@ -201,6 +209,12 @@ export default function PaymentGatewaysSettings() {
       if (mpSandboxToken) {
         settingsData.sandbox_access_token_encrypted = mpSandboxToken;
       }
+      if (mpPublicKey) {
+        settingsData.public_key = mpPublicKey;
+      }
+      if (mpSandboxPublicKey) {
+        settingsData.sandbox_public_key = mpSandboxPublicKey;
+      }
 
       if (mpSettings.id) {
         const { error } = await supabase
@@ -227,6 +241,8 @@ export default function PaymentGatewaysSettings() {
       toast({ title: 'Mercado Pago salvo com sucesso!' });
       setMPAccessToken('');
       setMPSandboxToken('');
+      setMPPublicKey('');
+      setMPSandboxPublicKey('');
       fetchSettings();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro ao salvar';
@@ -545,6 +561,35 @@ export default function PaymentGatewaysSettings() {
                     >
                       {showMPSandboxToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Public Key (Produção)</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={mpPublicKey}
+                      onChange={(e) => setMPPublicKey(e.target.value)}
+                      placeholder={mpSettings.public_key ? '••••••••••••' : 'APP_USR-...'}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Encontre sua Public Key no painel de credenciais do Mercado Pago
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Public Key (Sandbox)</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={mpSandboxPublicKey}
+                      onChange={(e) => setMPSandboxPublicKey(e.target.value)}
+                      placeholder={mpSettings.sandbox_public_key ? '••••••••••••' : 'TEST-...'}
+                      className="pl-10"
+                    />
                   </div>
                 </div>
               </div>
