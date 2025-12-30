@@ -15,7 +15,7 @@ interface WebhookEndpoint {
   is_enabled: boolean;
 }
 
-interface WebhookDelivery {
+interface WebhookDeliveryWithEndpoint {
   id: string;
   endpoint_id: string;
   event_id: string;
@@ -23,25 +23,7 @@ interface WebhookDelivery {
   payload: Record<string, any>;
   attempt_count: number;
   max_attempts: number;
-  endpoint: WebhookEndpoint | null;
-}
-
-interface WebhookDeliveryRaw {
-  id: string;
-  endpoint_id: string;
-  event_id: string;
-  event_type: string;
-  payload: Record<string, any>;
-  attempt_count: number;
-  max_attempts: number;
-  endpoint: {
-    id: string;
-    name: string;
-    url: string;
-    secret: string;
-    headers: Record<string, string>;
-    timeout_ms: number;
-  };
+  endpoint: WebhookEndpoint;
 }
 
 // Gera assinatura HMAC-SHA256
@@ -72,13 +54,14 @@ function calculateNextRetry(attemptCount: number): Date {
 
 // Envia webhook
 async function sendWebhook(
-  delivery: WebhookDelivery
+  delivery: WebhookDeliveryWithEndpoint
 ): Promise<{ success: boolean; status?: number; body?: string; error?: string }> {
   const timestamp = Math.floor(Date.now() / 1000);
   const payloadString = JSON.stringify(delivery.payload);
+  const endpoint = delivery.endpoint;
   
   try {
-    const signature = await generateSignature(payloadString, delivery.endpoint.secret, timestamp);
+    const signature = await generateSignature(payloadString, endpoint.secret, timestamp);
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -86,13 +69,13 @@ async function sendWebhook(
       'X-Webhook-Event': delivery.event_type,
       'X-Webhook-ID': delivery.event_id,
       'X-Webhook-Retry': delivery.attempt_count.toString(),
-      ...delivery.endpoint.headers
+      ...(endpoint.headers || {})
     };
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), delivery.endpoint.timeout_ms);
+    const timeoutId = setTimeout(() => controller.abort(), endpoint.timeout_ms);
     
-    const response = await fetch(delivery.endpoint.url, {
+    const response = await fetch(endpoint.url, {
       method: 'POST',
       headers,
       body: payloadString,
@@ -110,7 +93,7 @@ async function sendWebhook(
     };
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      return { success: false, error: `Timeout after ${delivery.endpoint.timeout_ms}ms` };
+      return { success: false, error: `Timeout after ${endpoint.timeout_ms}ms` };
     }
     return { success: false, error: error.message };
   }
@@ -144,16 +127,16 @@ Deno.serve(async (req) => {
       console.error('[webhook-retry] Error fetching deliveries:', deliveriesError);
       throw deliveriesError;
     }
-    
-    // Filter deliveries that still have retries available
-    const deliveries = (rawDeliveries || []).filter(
-      (d: WebhookDeliveryRaw) => d.attempt_count < d.max_attempts
-    ).map((d: WebhookDeliveryRaw) => ({
-      ...d,
-      endpoint: d.endpoint as WebhookEndpoint | null
-    })) as WebhookDelivery[];
 
-    if (!deliveries || deliveries.length === 0) {
+    // Filter deliveries that have valid endpoints and retries available
+    const deliveries: WebhookDeliveryWithEndpoint[] = (rawDeliveries || [])
+      .filter((d: any) => d.endpoint && d.attempt_count < d.max_attempts)
+      .map((d: any) => ({
+        ...d,
+        endpoint: d.endpoint as WebhookEndpoint
+      }));
+
+    if (deliveries.length === 0) {
       console.log('[webhook-retry] No pending deliveries to retry');
       return new Response(JSON.stringify({ 
         success: true, 
@@ -175,17 +158,15 @@ Deno.serve(async (req) => {
       processed++;
 
       // Verificar se o endpoint ainda está ativo
-      if (!delivery.endpoint || !delivery.endpoint.is_enabled) {
+      if (!delivery.endpoint.is_enabled) {
         console.log(`[webhook-retry] Endpoint disabled for delivery ${delivery.id}, marking as failed`);
-        const updateData = {
-          status: 'failed',
-          error_message: 'Endpoint disabled',
-          last_attempt_at: new Date().toISOString()
-        };
         await supabase
           .from('webhook_deliveries')
-          .update(updateData
-          )
+          .update({
+            status: 'failed',
+            error_message: 'Endpoint disabled',
+            last_attempt_at: new Date().toISOString()
+          })
           .eq('id', delivery.id);
         failedCount++;
         continue;
@@ -197,64 +178,63 @@ Deno.serve(async (req) => {
       // Tentar enviar
       const result = await sendWebhook(delivery);
 
-      // Atualizar registro
+      // Atualizar registro baseado no resultado
       if (result.success) {
-        const successUpdate = {
-          attempt_count: newAttemptCount,
-          last_attempt_at: new Date().toISOString(),
-          response_status: result.status || null,
-          response_body: result.body || null,
-          status: 'success',
-          delivered_at: new Date().toISOString(),
-          next_retry_at: null
-        };
         await supabase
           .from('webhook_deliveries')
-          .update(successUpdate)
+          .update({
+            attempt_count: newAttemptCount,
+            last_attempt_at: new Date().toISOString(),
+            response_status: result.status || null,
+            response_body: result.body || null,
+            status: 'success',
+            delivered_at: new Date().toISOString(),
+            next_retry_at: null
+          })
           .eq('id', delivery.id);
         console.log(`[webhook-retry] ✓ Successfully delivered ${delivery.id}`);
         successCount++;
       } else if (newAttemptCount >= delivery.max_attempts) {
-        const failedUpdate = {
-          attempt_count: newAttemptCount,
-          last_attempt_at: new Date().toISOString(),
-          response_status: result.status || null,
-          response_body: result.body || result.error || null,
-          status: 'failed',
-          error_message: result.error || `HTTP ${result.status}`,
-          next_retry_at: null
-        };
         await supabase
           .from('webhook_deliveries')
-          .update(failedUpdate)
+          .update({
+            attempt_count: newAttemptCount,
+            last_attempt_at: new Date().toISOString(),
+            response_status: result.status || null,
+            response_body: result.body || result.error || null,
+            status: 'failed',
+            error_message: result.error || `HTTP ${result.status}`,
+            next_retry_at: null
+          })
           .eq('id', delivery.id);
         console.log(`[webhook-retry] ✗ Max attempts reached for ${delivery.id}, marking as failed`);
         failedCount++;
       } else {
-        const retryUpdate = {
-          attempt_count: newAttemptCount,
-          last_attempt_at: new Date().toISOString(),
-          response_status: result.status || null,
-          response_body: result.body || result.error || null,
-          status: 'pending',
-          next_retry_at: calculateNextRetry(newAttemptCount).toISOString(),
-          error_message: result.error || `HTTP ${result.status}`
-        };
+        const nextRetryAt = calculateNextRetry(newAttemptCount).toISOString();
         await supabase
           .from('webhook_deliveries')
-          .update(retryUpdate)
+          .update({
+            attempt_count: newAttemptCount,
+            last_attempt_at: new Date().toISOString(),
+            response_status: result.status || null,
+            response_body: result.body || result.error || null,
+            status: 'pending',
+            next_retry_at: nextRetryAt,
+            error_message: result.error || `HTTP ${result.status}`
+          })
           .eq('id', delivery.id);
-        console.log(`[webhook-retry] ✗ Failed ${delivery.id}, will retry at ${retryUpdate.next_retry_at}`);
+        console.log(`[webhook-retry] ✗ Failed ${delivery.id}, will retry at ${nextRetryAt}`);
         retryingCount++;
       }
     }
 
-    const finalResults = { processed, success: successCount, failed: failedCount, retrying: retryingCount };
-    console.log('[webhook-retry] Retry process completed:', finalResults);
+    console.log('[webhook-retry] Retry process completed:', { processed, successCount, failedCount, retryingCount });
 
     return new Response(JSON.stringify({
-      success: true,
-      ...finalResults
+      processed,
+      success: successCount,
+      failed: failedCount,
+      retrying: retryingCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
