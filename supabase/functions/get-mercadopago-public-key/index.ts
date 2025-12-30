@@ -27,9 +27,14 @@ Deno.serve(async (req) => {
     }
 
     if (!mpSettings || !mpSettings.is_configured) {
+      // Return 200 but with error info so frontend can display nicely
       return new Response(
-        JSON.stringify({ error: "Mercado Pago not configured" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          publicKey: null, 
+          error: "Mercado Pago não configurado",
+          hint: "Configure o Mercado Pago nas configurações de meios de pagamento"
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -40,12 +45,16 @@ Deno.serve(async (req) => {
 
     if (!publicKey) {
       console.error("Public key not configured in mercadopago_settings");
+      // Return 200 but with clear error so frontend shows user-friendly message
       return new Response(
         JSON.stringify({ 
-          error: "Public key not configured",
-          hint: "Please add your Mercado Pago public key in the payment gateway settings"
+          publicKey: null,
+          error: "Public Key não configurada",
+          hint: mpSettings.is_sandbox 
+            ? "Adicione a Public Key (Sandbox) nas configurações do Mercado Pago"
+            : "Adicione a Public Key (Produção) nas configurações do Mercado Pago"
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
