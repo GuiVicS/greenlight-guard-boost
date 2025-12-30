@@ -72,19 +72,26 @@ Deno.serve(async (req) => {
         }
 
         if (subscriptionId) {
-          // Update subscription status to active
+          // Update subscription status to active and save payment method for auto-charge
+          const updateData: Record<string, unknown> = {
+            status: "active",
+            stripe_customer_id: paymentIntent.customer,
+          };
+          
+          // If payment method was saved (setup_future_usage was used), enable auto-charge
+          if (paymentIntent.payment_method && paymentIntent.setup_future_usage === "off_session") {
+            updateData.auto_charge_enabled = true;
+          }
+          
           const { error: subError } = await supabase
             .from("subscriptions")
-            .update({
-              status: "active",
-              stripe_customer_id: paymentIntent.customer,
-            })
+            .update(updateData)
             .eq("id", subscriptionId);
 
           if (subError) {
             console.error("Error updating subscription:", subError);
           } else {
-            console.log("Subscription updated to active:", subscriptionId);
+            console.log("Subscription updated to active:", subscriptionId, "Auto-charge:", !!updateData.auto_charge_enabled);
           }
         }
 

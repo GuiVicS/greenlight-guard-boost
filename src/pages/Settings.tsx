@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { SessionManagement } from '@/components/settings/SessionManagement';
+import { useTheme } from 'next-themes';
 import { 
   Settings as SettingsIcon, 
   Users, 
@@ -16,7 +17,10 @@ import {
   Shield,
   Mail,
   Globe,
-  Save
+  Save,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -53,6 +57,7 @@ interface UserWithRole {
 export default function Settings() {
   const { user, userRole } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -354,6 +359,72 @@ export default function Settings() {
               <Save className="w-4 h-4" />
               Salvar Configurações
             </Button>
+          </div>
+        </div>
+
+        {/* Theme Settings */}
+        <div className="glass-card p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Sun className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Tema do Painel</h3>
+              <p className="text-sm text-muted-foreground">
+                Escolha o tema de aparência do painel administrativo
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setTheme('light')}
+              className={cn(
+                "flex-1 p-4 rounded-lg border-2 transition-all",
+                "flex flex-col items-center gap-2",
+                theme === 'light' 
+                  ? "border-primary bg-primary/10" 
+                  : "border-border hover:border-primary/50"
+              )}
+            >
+              <div className="w-12 h-8 bg-white border border-border rounded shadow-sm flex items-center justify-center">
+                <Sun className="w-4 h-4 text-amber-500" />
+              </div>
+              <span className="text-sm font-medium">Light</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme('dark')}
+              className={cn(
+                "flex-1 p-4 rounded-lg border-2 transition-all",
+                "flex flex-col items-center gap-2",
+                theme === 'dark' 
+                  ? "border-primary bg-primary/10" 
+                  : "border-border hover:border-primary/50"
+              )}
+            >
+              <div className="w-12 h-8 bg-slate-900 border border-slate-700 rounded shadow-sm flex items-center justify-center">
+                <Moon className="w-4 h-4 text-slate-300" />
+              </div>
+              <span className="text-sm font-medium">Dark</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme('system')}
+              className={cn(
+                "flex-1 p-4 rounded-lg border-2 transition-all",
+                "flex flex-col items-center gap-2",
+                theme === 'system' 
+                  ? "border-primary bg-primary/10" 
+                  : "border-border hover:border-primary/50"
+              )}
+            >
+              <div className="w-12 h-8 bg-gradient-to-r from-white to-slate-900 border border-border rounded shadow-sm flex items-center justify-center">
+                <Monitor className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm font-medium">Sistema</span>
+            </button>
           </div>
         </div>
 

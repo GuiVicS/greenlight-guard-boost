@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { subscriptionId, paymentMethod } = await req.json();
+    const { subscriptionId, paymentMethod, saveCardForAutoCharge = false } = await req.json();
 
     if (!subscriptionId || !paymentMethod) {
       return new Response(
@@ -78,6 +78,44 @@ Deno.serve(async (req) => {
 
     const config = countryConfig[country] || countryConfig.BR;
 
+    // Get or create Stripe customer for saving payment method
+    let stripeCustomerId = subscription.stripe_customer_id;
+    
+    if (saveCardForAutoCharge && paymentMethod === "card" && !stripeCustomerId) {
+      // Create Stripe customer
+      const customerParams = new URLSearchParams({
+        email: subscription.asset?.client?.email || "",
+        name: subscription.asset?.client?.name || "",
+        "metadata[subscription_id]": subscriptionId,
+        "metadata[asset_id]": subscription.asset?.id || "",
+      });
+
+      const customerResponse = await fetch("https://api.stripe.com/v1/customers", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${stripeSettings.secret_key_encrypted}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: customerParams,
+      });
+
+      const customer = await customerResponse.json();
+      
+      if (customer.error) {
+        console.error("Error creating Stripe customer:", customer.error);
+      } else {
+        stripeCustomerId = customer.id;
+        
+        // Save customer ID to subscription
+        await supabase
+          .from("subscriptions")
+          .update({ stripe_customer_id: stripeCustomerId })
+          .eq("id", subscriptionId);
+          
+        console.log("Created Stripe customer:", stripeCustomerId);
+      }
+    }
+
     // Create pending payment
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
@@ -115,6 +153,12 @@ Deno.serve(async (req) => {
     config.methods.forEach(method => {
       params.append("payment_method_types[]", method);
     });
+
+    // If saving card for auto charge, add customer and setup_future_usage
+    if (saveCardForAutoCharge && paymentMethod === "card" && stripeCustomerId) {
+      params.append("customer", stripeCustomerId);
+      params.append("setup_future_usage", "off_session");
+    }
 
     // Add receipt email if available
     if (subscription.asset?.client?.email) {
