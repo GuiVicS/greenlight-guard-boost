@@ -23,3 +23,15 @@ verify_jwt = false
 
 [functions.unlock-asset-after-payment]
 verify_jwt = false
+
+[functions.get-mercadopago-public-key]
+verify_jwt = false
+
+[functions.send-billing-email]
+verify_jwt = false
+
+[functions.send-billing-whatsapp]
+verify_jwt = false
+
+[functions.process-auto-charge]
+verify_jwt = false
