@@ -188,7 +188,7 @@ export function MercadoPagoBoletoForm({
       </Button>
 
       <p className={`text-xs text-center ${isDarkTheme ? "text-slate-500" : "text-muted-foreground"}`}>
-        🔒 Pagamento seguro processado pelo Mercado Pago
+        🔒 Pagamento 100% seguro
       </p>
     </div>
   );
