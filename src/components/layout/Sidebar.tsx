@@ -30,7 +30,7 @@ const menuItems = [
 ];
 
 const adminItems = [
-  { icon: CreditCard, label: 'Meios de Pagamento', path: '/payment-gateways' },
+  { icon: Zap, label: 'Integrações', path: '/integrations' },
   { icon: Settings, label: 'Configurações', path: '/settings' },
 ];
 

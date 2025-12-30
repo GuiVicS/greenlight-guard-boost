@@ -15,6 +15,8 @@ import Payments from "./pages/Payments";
 import Logs from "./pages/Logs";
 import StripeIntegration from "./pages/StripeIntegration";
 import PaymentGatewaysSettings from "./pages/PaymentGatewaysSettings";
+import Integrations from "./pages/Integrations";
+import BillingIntegration from "./pages/BillingIntegration";
 import Settings from "./pages/Settings";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -119,6 +121,22 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <PaymentGatewaysSettings />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/integrations"
+      element={
+        <ProtectedRoute>
+          <Integrations />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/integrations/billing"
+      element={
+        <ProtectedRoute>
+          <BillingIntegration />
         </ProtectedRoute>
       }
     />
