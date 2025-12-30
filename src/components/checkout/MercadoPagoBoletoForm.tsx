@@ -4,6 +4,7 @@ import { Loader2, FileText, Copy, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/checkout-utils";
+import { getEdgeFunctionErrorMessage } from "@/lib/edge-function-errors";
 
 interface MercadoPagoBoletoFormProps {
   subscriptionId: string;
@@ -51,24 +52,15 @@ export function MercadoPagoBoletoForm({
       });
 
       if (error) {
-        // Extract error message from the response
-        let errorMsg = "Não foi possível gerar o boleto";
-        if (error.message) {
-          if (error.message.includes("Invalid transaction_amount") || error.message.includes("4037")) {
-            errorMsg = "Valor mínimo para boleto é R$ 5,00";
-          } else {
-            errorMsg = error.message;
-          }
-        }
-        throw new Error(errorMsg);
+        const msg = await getEdgeFunctionErrorMessage(
+          error,
+          "Não foi possível gerar o boleto. Tente novamente."
+        );
+        throw new Error(msg);
       }
 
       if (data?.error) {
-        let errorMsg = data.error;
-        if (data.error.includes("Invalid transaction_amount") || data.error.includes("4037")) {
-          errorMsg = "Valor mínimo para boleto é R$ 5,00";
-        }
-        throw new Error(errorMsg);
+        throw new Error(String(data.error));
       }
 
       if (data.boletoUrl) {
