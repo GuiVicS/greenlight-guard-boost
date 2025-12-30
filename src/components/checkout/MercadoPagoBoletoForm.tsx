@@ -50,7 +50,26 @@ export function MercadoPagoBoletoForm({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Extract error message from the response
+        let errorMsg = "Não foi possível gerar o boleto";
+        if (error.message) {
+          if (error.message.includes("Invalid transaction_amount") || error.message.includes("4037")) {
+            errorMsg = "Valor mínimo para boleto é R$ 5,00";
+          } else {
+            errorMsg = error.message;
+          }
+        }
+        throw new Error(errorMsg);
+      }
+
+      if (data?.error) {
+        let errorMsg = data.error;
+        if (data.error.includes("Invalid transaction_amount") || data.error.includes("4037")) {
+          errorMsg = "Valor mínimo para boleto é R$ 5,00";
+        }
+        throw new Error(errorMsg);
+      }
 
       if (data.boletoUrl) {
         setBoletoData({
