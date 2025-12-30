@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { SessionManagement } from '@/components/settings/SessionManagement';
 import { 
   Settings as SettingsIcon, 
   Users, 
@@ -355,6 +356,9 @@ export default function Settings() {
             </Button>
           </div>
         </div>
+
+        {/* Session Management */}
+        <SessionManagement />
 
         {/* System Info */}
         <div className="glass-card p-6 space-y-4">
