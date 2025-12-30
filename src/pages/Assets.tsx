@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Edit, Trash2, Loader2, Eye, Copy, Globe } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Loader2, Eye, Copy, Globe, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,10 +44,11 @@ export default function Assets() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    type: 'custom' as 'wordpress' | 'shopify' | 'custom' | 'other',
+    type: 'custom' as 'wordpress' | 'shopify' | 'custom' | 'other' | 'infoproduct',
     client_id: '',
     status: 'active' as 'active' | 'blocked',
     block_reason: '',
+    infoproduct_url: '',
   });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -92,6 +93,7 @@ export default function Assets() {
         client_id: formData.client_id,
         status: formData.status,
         block_reason: formData.status === 'blocked' ? formData.block_reason : null,
+        infoproduct_url: formData.type === 'infoproduct' ? formData.infoproduct_url : null,
       };
 
       if (editingAsset) {
@@ -113,7 +115,7 @@ export default function Assets() {
 
       setIsDialogOpen(false);
       setEditingAsset(null);
-      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '' });
+      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '' });
       fetchData();
     } catch (error: any) {
       toast({
@@ -130,10 +132,11 @@ export default function Assets() {
     setEditingAsset(asset);
     setFormData({
       name: asset.name,
-      type: asset.type as 'wordpress' | 'shopify' | 'custom' | 'other',
+      type: asset.type as 'wordpress' | 'shopify' | 'custom' | 'other' | 'infoproduct',
       client_id: asset.client_id,
       status: asset.status as 'active' | 'blocked',
       block_reason: asset.block_reason || '',
+      infoproduct_url: (asset as any).infoproduct_url || '',
     });
     setIsDialogOpen(true);
   };
@@ -171,6 +174,7 @@ export default function Assets() {
     shopify: 'Shopify',
     custom: 'Custom',
     other: 'Outro',
+    infoproduct: 'Infoproduto',
   };
 
   return (
@@ -189,7 +193,7 @@ export default function Assets() {
             setIsDialogOpen(open);
             if (!open) {
               setEditingAsset(null);
-              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '' });
+              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '' });
             }
           }}>
             <DialogTrigger asChild>
@@ -234,9 +238,10 @@ export default function Assets() {
                   <select
                     id="type"
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any, infoproduct_url: '' })}
                     className="flex h-10 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground"
                   >
+                    <option value="infoproduct">Infoproduto</option>
                     <option value="wordpress">WordPress</option>
                     <option value="shopify">Shopify</option>
                     <option value="custom">Custom</option>
@@ -255,6 +260,21 @@ export default function Assets() {
                     <option value="blocked">Bloqueado</option>
                   </select>
                 </div>
+                {formData.type === 'infoproduct' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="infoproduct_url">Link do Infoproduto</Label>
+                    <Input
+                      id="infoproduct_url"
+                      value={formData.infoproduct_url}
+                      onChange={(e) => setFormData({ ...formData, infoproduct_url: e.target.value })}
+                      placeholder="https://exemplo.com/curso"
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Link para onde o cliente será redirecionado após o pagamento
+                    </p>
+                  </div>
+                )}
                 {formData.status === 'blocked' && (
                   <div className="space-y-2">
                     <Label htmlFor="block_reason">Motivo do Bloqueio</Label>
@@ -305,7 +325,11 @@ export default function Assets() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
-                      <Globe className="w-5 h-5 text-primary" />
+                      {asset.type === 'infoproduct' ? (
+                        <Package className="w-5 h-5 text-primary" />
+                      ) : (
+                        <Globe className="w-5 h-5 text-primary" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground">{asset.name}</h3>

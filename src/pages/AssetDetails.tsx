@@ -19,7 +19,9 @@ import {
   Lock,
   Unlock,
   Palette,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Package,
+  Link as LinkIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -256,7 +258,11 @@ export default function AssetDetails() {
               {/* Asset Info */}
               <div className="glass-card p-6 space-y-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-primary" />
+                  {asset.type === 'infoproduct' ? (
+                    <Package className="w-5 h-5 text-primary" />
+                  ) : (
+                    <Globe className="w-5 h-5 text-primary" />
+                  )}
                   Informações do Ativo
                 </h3>
                 <div className="space-y-3 text-sm">
@@ -266,8 +272,24 @@ export default function AssetDetails() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tipo</span>
-                    <span className="text-foreground capitalize">{asset.type}</span>
+                    <span className="text-foreground capitalize">
+                      {asset.type === 'infoproduct' ? 'Infoproduto' : asset.type}
+                    </span>
                   </div>
+                  {asset.type === 'infoproduct' && (asset as any).infoproduct_url && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Link do Produto</span>
+                      <a 
+                        href={(asset as any).infoproduct_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1 max-w-[200px] truncate"
+                      >
+                        <LinkIcon className="w-3 h-3" />
+                        {(asset as any).infoproduct_url}
+                      </a>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Cliente</span>
                     <span className="text-foreground">{asset.clients?.name}</span>
@@ -334,25 +356,65 @@ export default function AssetDetails() {
           {/* Integration Tab */}
           <TabsContent value="integration" className="space-y-6">
             <div className="glass-card p-6 space-y-6">
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Script de Bloqueio</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Adicione este script ao seu site para ativar o sistema de bloqueio automático.
-                </p>
-                <div className="relative">
-                  <pre className="bg-muted/30 rounded-lg p-4 text-sm overflow-x-auto">
-                    <code className="text-primary">{getBlockingScript()}</code>
-                  </pre>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2"
-                    onClick={() => copyToClipboard(getBlockingScript(), 'script')}
-                  >
-                    {copied === 'script' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </Button>
+              {/* Infoproduct Link Section - Only for infoproducts */}
+              {asset.type === 'infoproduct' && (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Package className="w-5 h-5 text-primary" />
+                    Link do Infoproduto
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Este é o link para onde o cliente será redirecionado automaticamente após o pagamento ser confirmado.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={(asset as any).infoproduct_url || ''} 
+                      readOnly 
+                      className="flex-1"
+                      placeholder="Nenhum link configurado"
+                    />
+                    {(asset as any).infoproduct_url && (
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard((asset as any).infoproduct_url, 'infoproduct')}
+                        >
+                          {copied === 'infoproduct' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => window.open((asset as any).infoproduct_url, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Blocking Script - Only for non-infoproducts */}
+              {asset.type !== 'infoproduct' && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Script de Bloqueio</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Adicione este script ao seu site para ativar o sistema de bloqueio automático.
+                  </p>
+                  <div className="relative">
+                    <pre className="bg-muted/30 rounded-lg p-4 text-sm overflow-x-auto">
+                      <code className="text-primary">{getBlockingScript()}</code>
+                    </pre>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={() => copyToClipboard(getBlockingScript(), 'script')}
+                    >
+                      {copied === 'script' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <h3 className="font-semibold text-foreground mb-2">Chave Pública</h3>
@@ -379,7 +441,9 @@ export default function AssetDetails() {
               <div>
                 <h3 className="font-semibold text-foreground mb-2">Link do Checkout</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Compartilhe este link com clientes para regularizar pagamentos.
+                  {asset.type === 'infoproduct' 
+                    ? 'Compartilhe este link com clientes para realizar a compra do infoproduto.'
+                    : 'Compartilhe este link com clientes para regularizar pagamentos.'}
                 </p>
                 <div className="flex gap-2">
                   <Input value={getCheckoutUrl()} readOnly className="flex-1" />
