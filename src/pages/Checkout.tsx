@@ -196,6 +196,8 @@ export default function Checkout() {
         body: {
           subscriptionId: subscription.id,
           paymentMethod: method,
+          // Salvar cartão para débito automático quando for pagamento com cartão
+          saveCardForAutoCharge: method === "card",
         },
       });
 
