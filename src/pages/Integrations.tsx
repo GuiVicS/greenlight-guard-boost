@@ -1,9 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { 
-  MessageCircle, 
   Mail, 
-  CreditCard, 
   Webhook,
   ArrowRight,
   CheckCircle,
@@ -12,12 +10,16 @@ import {
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import whatsappLogo from '@/assets/whatsapp-logo.png';
+import stripeLogo from '@/assets/stripe-logo.png';
+import mercadopagoLogo from '@/assets/mercadopago-logo.jpeg';
 
 interface IntegrationCard {
   id: string;
   name: string;
   description: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
+  logoUrl?: string;
   iconColor: string;
   iconBg: string;
   path: string;
@@ -29,7 +31,7 @@ const integrations: IntegrationCard[] = [
     id: 'whatsapp',
     name: 'WhatsApp',
     description: 'Envie cobranças e notificações via WhatsApp com Evolution API',
-    icon: MessageCircle,
+    logoUrl: whatsappLogo,
     iconColor: 'text-[#25D366]',
     iconBg: 'bg-[#25D366]/20',
     path: '/integrations/billing',
@@ -49,7 +51,7 @@ const integrations: IntegrationCard[] = [
     id: 'stripe',
     name: 'Stripe',
     description: 'Aceite pagamentos com cartão de crédito e boleto',
-    icon: CreditCard,
+    logoUrl: stripeLogo,
     iconColor: 'text-[#635BFF]',
     iconBg: 'bg-[#635BFF]/20',
     path: '/payment-gateways',
@@ -59,7 +61,7 @@ const integrations: IntegrationCard[] = [
     id: 'mercadopago',
     name: 'Mercado Pago',
     description: 'Aceite pagamentos via PIX no Brasil',
-    icon: CreditCard,
+    logoUrl: mercadopagoLogo,
     iconColor: 'text-[#00B1EA]',
     iconBg: 'bg-[#00B1EA]/20',
     path: '/payment-gateways',
@@ -147,10 +149,18 @@ export default function Integrations() {
                     >
                       <div className="flex items-start gap-4">
                         <div className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                          "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden",
                           integration.iconBg
                         )}>
-                          <Icon className={cn("w-6 h-6", integration.iconColor)} />
+                          {integration.logoUrl ? (
+                            <img 
+                              src={integration.logoUrl} 
+                              alt={integration.name} 
+                              className="w-8 h-8 object-contain rounded"
+                            />
+                          ) : Icon ? (
+                            <Icon className={cn("w-6 h-6", integration.iconColor)} />
+                          ) : null}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
