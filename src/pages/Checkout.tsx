@@ -185,8 +185,20 @@ export default function Checkout() {
     }
   };
 
+  // Check if a method uses Stripe based on payment_methods_config
+  const methodUsesStripe = (method: string): boolean => {
+    const config = paymentMethods.find(m => m.method_name === method && m.is_enabled);
+    return config?.gateway_type === 'stripe';
+  };
+
   const createPaymentIntent = async (method: "card" | "boleto") => {
     if (!subscription) return;
+
+    // Only create Stripe payment intent if the method uses Stripe
+    if (!methodUsesStripe(method)) {
+      console.log(`Method ${method} uses Mercado Pago, skipping Stripe payment intent`);
+      return;
+    }
 
     setCreatingIntent(true);
     setClientSecret(null);
@@ -224,15 +236,16 @@ export default function Checkout() {
 
   const handleGoToPayment = () => {
     setCurrentStep(2);
-    if (subscription && !clientSecret && paymentMethod !== "pix") {
+    // Only create Stripe payment intent if the method uses Stripe
+    if (subscription && !clientSecret && paymentMethod !== "pix" && methodUsesStripe(paymentMethod)) {
       createPaymentIntent(paymentMethod as "card" | "boleto");
     }
   };
 
   const handlePaymentMethodChange = (method: "card" | "boleto" | "pix") => {
     setPaymentMethod(method);
-    // Only create Stripe payment intent for card/boleto, not pix
-    if (method !== "pix") {
+    // Only create Stripe payment intent if the method uses Stripe
+    if (method !== "pix" && methodUsesStripe(method)) {
       createPaymentIntent(method);
     }
   };
@@ -316,6 +329,7 @@ export default function Checkout() {
   const isDarkTheme = subscription.asset.checkout_theme === 'dark';
   const showBoleto = paymentMethods.some(m => m.method_name === 'boleto' && m.is_enabled);
   const showPix = paymentMethods.some(m => m.method_name === 'pix' && m.is_enabled);
+  const showCard = paymentMethods.some(m => m.method_name === 'card' && m.is_enabled);
   const formattedAmount = formatCurrency(subscription.monthly_value, country);
 
   if (paymentSuccess) {
@@ -451,7 +465,9 @@ export default function Checkout() {
                 isDarkTheme={isDarkTheme}
                 showBoleto={showBoleto}
                 showPix={showPix}
+                showCard={showCard || (!showPix && !showBoleto)}
                 returnUrl={returnUrl || undefined}
+                paymentMethods={paymentMethods}
               />
             )}
           </div>

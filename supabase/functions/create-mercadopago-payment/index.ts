@@ -17,6 +17,14 @@ interface PaymentRequest {
   cardToken?: string;
   installments?: number;
   issuerId?: string;
+  // Card data for direct processing (when no SDK token available)
+  cardData?: {
+    cardNumber: string;
+    cardholderName: string;
+    expirationMonth: string;
+    expirationYear: string;
+    securityCode: string;
+  };
 }
 
 Deno.serve(async (req) => {
@@ -39,7 +47,8 @@ Deno.serve(async (req) => {
       returnUrl,
       cardToken,
       installments = 1,
-      issuerId
+      issuerId,
+      cardData
     } = requestData;
 
     console.log("=== CREATE MERCADOPAGO PAYMENT ===");
@@ -164,16 +173,67 @@ Deno.serve(async (req) => {
         break;
 
       case "card":
-        if (!cardToken) {
+        // If we have a token, use it directly
+        if (cardToken) {
+          paymentData.token = cardToken;
+          paymentData.installments = installments;
+          if (issuerId) {
+            paymentData.issuer_id = issuerId;
+          }
+        } 
+        // If we have card data, we need to create a card token first
+        else if (cardData) {
+          console.log("Creating card token from card data...");
+          
+          // Format expiration year to 4 digits
+          let expYear = cardData.expirationYear;
+          if (expYear.length === 2) {
+            expYear = `20${expYear}`;
+          }
+          
+          // Create card token via Mercado Pago API
+          const tokenResponse = await fetch("https://api.mercadopago.com/v1/card_tokens", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              card_number: cardData.cardNumber,
+              cardholder: {
+                name: cardData.cardholderName,
+                identification: payerDocument ? {
+                  type: payerDocument.length === 11 ? "CPF" : "CNPJ",
+                  number: payerDocument
+                } : undefined
+              },
+              expiration_month: parseInt(cardData.expirationMonth),
+              expiration_year: parseInt(expYear),
+              security_code: cardData.securityCode
+            })
+          });
+          
+          const tokenResult = await tokenResponse.json();
+          
+          if (!tokenResponse.ok || !tokenResult.id) {
+            console.error("Error creating card token:", tokenResult);
+            return new Response(
+              JSON.stringify({ 
+                error: "Erro ao processar dados do cartão. Verifique as informações e tente novamente.",
+                details: tokenResult
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+            );
+          }
+          
+          console.log("Card token created:", tokenResult.id);
+          paymentData.token = tokenResult.id;
+          paymentData.installments = installments;
+        } else {
           return new Response(
-            JSON.stringify({ error: "Token do cartão é obrigatório" }),
+            JSON.stringify({ error: "Token do cartão ou dados do cartão são obrigatórios" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
           );
-        }
-        paymentData.token = cardToken;
-        paymentData.installments = installments;
-        if (issuerId) {
-          paymentData.issuer_id = issuerId;
         }
         dbPaymentMethod = "card";
         break;
