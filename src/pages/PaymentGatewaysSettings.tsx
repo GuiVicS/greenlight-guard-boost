@@ -121,6 +121,10 @@ export default function PaymentGatewaysSettings() {
         .maybeSingle();
 
       if (mpData) {
+        const hasSandbox = Boolean(mpData.sandbox_access_token_encrypted) && Boolean(mpData.sandbox_public_key);
+        const hasProduction = Boolean(mpData.access_token_encrypted) && Boolean(mpData.public_key);
+        const fullyConfigured = (mpData.is_sandbox ?? true) ? hasSandbox : hasProduction;
+
         setMPSettings({
           id: mpData.id,
           access_token_encrypted: mpData.access_token_encrypted,
@@ -128,7 +132,7 @@ export default function PaymentGatewaysSettings() {
           webhook_secret_encrypted: mpData.webhook_secret_encrypted,
           public_key: mpData.public_key || null,
           sandbox_public_key: mpData.sandbox_public_key || null,
-          is_configured: mpData.is_configured || false,
+          is_configured: fullyConfigured,
           is_enabled: mpData.is_enabled ?? false,
           is_sandbox: mpData.is_sandbox ?? true,
         });
@@ -199,7 +203,7 @@ export default function PaymentGatewaysSettings() {
       const settingsData: Record<string, unknown> = {
         is_enabled: mpSettings.is_enabled,
         is_sandbox: mpSettings.is_sandbox,
-        is_configured: true,
+        // is_configured será calculado após aplicar as chaves
         updated_at: new Date().toISOString(),
       };
 
@@ -215,6 +219,18 @@ export default function PaymentGatewaysSettings() {
       if (mpSandboxPublicKey) {
         settingsData.sandbox_public_key = mpSandboxPublicKey;
       }
+
+      // Decide se está "configurado" o suficiente para Cartão (exige Access Token + Public Key no modo selecionado)
+      const effectiveProdToken = mpAccessToken || mpSettings.access_token_encrypted;
+      const effectiveSandboxToken = mpSandboxToken || mpSettings.sandbox_access_token_encrypted;
+      const effectiveProdPublicKey = mpPublicKey || mpSettings.public_key;
+      const effectiveSandboxPublicKey = mpSandboxPublicKey || mpSettings.sandbox_public_key;
+
+      const fullyConfigured = mpSettings.is_sandbox
+        ? Boolean(effectiveSandboxToken) && Boolean(effectiveSandboxPublicKey)
+        : Boolean(effectiveProdToken) && Boolean(effectiveProdPublicKey);
+
+      settingsData.is_configured = fullyConfigured;
 
       if (mpSettings.id) {
         const { error } = await supabase
