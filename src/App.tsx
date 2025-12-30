@@ -20,6 +20,8 @@ import BillingIntegration from "./pages/BillingIntegration";
 import Settings from "./pages/Settings";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
+import WebhooksSettings from "./pages/WebhooksSettings";
+import WebhookLogs from "./pages/WebhookLogs";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -150,6 +152,22 @@ const AppRoutes = () => (
     />
     <Route path="/checkout/:assetId" element={<Checkout />} />
     <Route path="/checkout/success" element={<CheckoutSuccess />} />
+    <Route
+      path="/integrations/webhooks"
+      element={
+        <ProtectedRoute>
+          <WebhooksSettings />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/integrations/webhooks/:id/logs"
+      element={
+        <ProtectedRoute>
+          <WebhookLogs />
+        </ProtectedRoute>
+      }
+    />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

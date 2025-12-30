@@ -65,6 +65,16 @@ const integrations: IntegrationCard[] = [
     path: '/payment-gateways',
     category: 'payment',
   },
+  {
+    id: 'webhooks',
+    name: 'Webhooks',
+    description: 'Envie notificações de eventos para sistemas externos',
+    icon: Webhook,
+    iconColor: 'text-[#F97316]',
+    iconBg: 'bg-[#F97316]/20',
+    path: '/integrations/webhooks',
+    category: 'automation',
+  },
 ];
 
 const categories = [
