@@ -98,6 +98,7 @@ export default function Assets() {
         status: formData.status,
         block_reason: formData.status === 'blocked' ? formData.block_reason : null,
         infoproduct_url: formData.type === 'infoproduct' ? formData.infoproduct_url : null,
+        stripe_price_id: formData.stripe_price_id.trim() || null,
       };
 
       if (editingAsset) {
