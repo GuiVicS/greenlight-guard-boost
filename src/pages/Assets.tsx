@@ -199,7 +199,7 @@ export default function Assets() {
             setIsDialogOpen(open);
             if (!open) {
               setEditingAsset(null);
-              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '' });
+              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '' });
             }
           }}>
             <DialogTrigger asChild>
