@@ -6,6 +6,63 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const MAX_FAILED_ATTEMPTS = 3;
+
+// Verify Stripe signature (HMAC-SHA256 over `${timestamp}.${body}`)
+async function verifyStripeSignature(
+  body: string,
+  signatureHeader: string,
+  secret: string,
+): Promise<boolean> {
+  try {
+    const parts = signatureHeader.split(",").map((p) => p.trim());
+    const timestamp = parts.find((p) => p.startsWith("t="))?.slice(2);
+    const signatures = parts.filter((p) => p.startsWith("v1=")).map((p) => p.slice(3));
+
+    if (!timestamp || signatures.length === 0) return false;
+
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+
+    const mac = await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(`${timestamp}.${body}`),
+    );
+
+    const expected = Array.from(new Uint8Array(mac))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    return signatures.some((sig) => sig === expected);
+  } catch (e) {
+    console.error("Signature verification error:", e);
+    return false;
+  }
+}
+
+// Re-check invoice status directly with Stripe to avoid out-of-order events
+async function fetchInvoiceStatus(
+  invoiceId: string,
+  secretKey: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.stripe.com/v1/invoices/${invoiceId}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    const invoice = await res.json();
+    return invoice?.status ?? null;
+  } catch (e) {
+    console.error("Error fetching invoice from Stripe:", e);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -34,15 +91,53 @@ Deno.serve(async (req) => {
     const signature = req.headers.get("stripe-signature");
     const body = await req.text();
 
-    // Verify webhook signature if secret is configured
-    if (stripeSettings.webhook_secret_encrypted && signature) {
-      // Note: In production, you'd want to properly decrypt and verify the signature
-      // For now, we'll process the webhook but log a warning
-      console.log("Webhook signature verification should be implemented with proper decryption");
+    // Signature validation (mandatory when a signing secret is configured)
+    if (stripeSettings.webhook_secret_encrypted) {
+      if (!signature) {
+        console.error("Missing stripe-signature header");
+        return new Response(
+          JSON.stringify({ error: "Missing signature" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+
+      const valid = await verifyStripeSignature(
+        body,
+        signature,
+        stripeSettings.webhook_secret_encrypted,
+      );
+
+      if (!valid) {
+        console.error("Invalid Stripe webhook signature");
+        return new Response(
+          JSON.stringify({ error: "Invalid signature" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+    } else {
+      console.warn("No webhook signing secret configured - signature not validated");
     }
 
     const event = JSON.parse(body);
-    console.log("Received Stripe event:", event.type);
+    console.log("Received Stripe event:", event.type, event.id);
+
+    // Idempotency: register the event id, ignore replays
+    if (event.id) {
+      const { error: dedupeError } = await supabase
+        .from("stripe_webhook_events")
+        .insert({ stripe_event_id: event.id, event_type: event.type });
+
+      if (dedupeError) {
+        if (dedupeError.code === "23505") {
+          console.log("Duplicate event ignored:", event.id);
+          return new Response(
+            JSON.stringify({ received: true, duplicate: true }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        console.error("Error recording webhook event:", dedupeError);
+      }
+    }
 
     switch (event.type) {
       case "payment_intent.succeeded": {
@@ -54,7 +149,6 @@ Deno.serve(async (req) => {
         console.log("PaymentIntent succeeded:", paymentIntent.id, { subscriptionId, paymentId, assetId });
 
         if (paymentId) {
-          // Update payment status to completed
           const { error: paymentError } = await supabase
             .from("payments")
             .update({
@@ -63,55 +157,39 @@ Deno.serve(async (req) => {
               stripe_payment_intent_id: paymentIntent.id,
             })
             .eq("id", paymentId);
-          
-          if (paymentError) {
-            console.error("Error updating payment:", paymentError);
-          } else {
-            console.log("Payment updated to completed:", paymentId);
-          }
+
+          if (paymentError) console.error("Error updating payment:", paymentError);
         }
 
         if (subscriptionId) {
-          // Update subscription status to active and save payment method for auto-charge
           const updateData: Record<string, unknown> = {
             status: "active",
             stripe_customer_id: paymentIntent.customer,
+            payment_status: "paid",
+            payment_failed_attempts: 0,
+            payment_failed_invoice_id: null,
+            access_block_reason: null,
+            blocked_at: null,
           };
-          
-          // If payment method was saved (setup_future_usage was used), enable auto-charge
+
           if (paymentIntent.payment_method && paymentIntent.setup_future_usage === "off_session") {
             updateData.auto_charge_enabled = true;
           }
-          
+
           const { error: subError } = await supabase
             .from("subscriptions")
             .update(updateData)
             .eq("id", subscriptionId);
 
-          if (subError) {
-            console.error("Error updating subscription:", subError);
-          } else {
-            console.log("Subscription updated to active:", subscriptionId, "Auto-charge:", !!updateData.auto_charge_enabled);
-          }
+          if (subError) console.error("Error updating subscription:", subError);
         }
 
-        // Unblock the asset
         if (assetId) {
-          const { error: assetError } = await supabase
+          await supabase
             .from("assets")
-            .update({
-              status: "active",
-              block_reason: null,
-            })
+            .update({ status: "active", block_reason: null })
             .eq("id", assetId);
 
-          if (assetError) {
-            console.error("Error unblocking asset:", assetError);
-          } else {
-            console.log("Asset unblocked:", assetId);
-          }
-
-          // Log the unblock
           await supabase.from("access_logs").insert({
             asset_id: assetId,
             action: "payment_completed",
@@ -131,7 +209,6 @@ Deno.serve(async (req) => {
         const paymentId = session.metadata?.payment_id;
 
         if (paymentId) {
-          // Update payment status
           await supabase
             .from("payments")
             .update({
@@ -143,17 +220,20 @@ Deno.serve(async (req) => {
         }
 
         if (subscriptionId) {
-          // Update subscription status to active
           await supabase
             .from("subscriptions")
             .update({
               status: "active",
               stripe_customer_id: session.customer,
               stripe_subscription_id: session.subscription,
+              payment_status: "paid",
+              payment_failed_attempts: 0,
+              payment_failed_invoice_id: null,
+              access_block_reason: null,
+              blocked_at: null,
             })
             .eq("id", subscriptionId);
 
-          // Get the subscription to find the asset
           const { data: subscription } = await supabase
             .from("subscriptions")
             .select("asset_id")
@@ -161,16 +241,11 @@ Deno.serve(async (req) => {
             .single();
 
           if (subscription) {
-            // Unblock the asset
             await supabase
               .from("assets")
-              .update({
-                status: "active",
-                block_reason: null,
-              })
+              .update({ status: "active", block_reason: null })
               .eq("id", subscription.asset_id);
 
-            // Log the unblock
             await supabase.from("access_logs").insert({
               asset_id: subscription.asset_id,
               action: "payment_completed",
@@ -184,102 +259,174 @@ Deno.serve(async (req) => {
         break;
       }
 
+      // Invoice paid -> always restore access when it was blocked for payment failure
+      case "invoice.paid":
       case "invoice.payment_succeeded": {
         const invoice = event.data.object;
         const stripeSubscriptionId = invoice.subscription;
+        if (!stripeSubscriptionId) break;
 
-        if (stripeSubscriptionId) {
-          // Find subscription by stripe_subscription_id
-          const { data: subscription } = await supabase
-            .from("subscriptions")
-            .select("id, asset_id")
-            .eq("stripe_subscription_id", stripeSubscriptionId)
-            .single();
+        const { data: subscription } = await supabase
+          .from("subscriptions")
+          .select("id, asset_id, access_block_reason")
+          .eq("stripe_subscription_id", stripeSubscriptionId)
+          .maybeSingle();
 
-          if (subscription) {
-            // Create payment record
+        if (!subscription) {
+          console.log("No local subscription for", stripeSubscriptionId);
+          break;
+        }
+
+        // Avoid duplicate payment rows for the same invoice payment intent
+        if (invoice.payment_intent) {
+          const { data: existing } = await supabase
+            .from("payments")
+            .select("id")
+            .eq("stripe_payment_intent_id", invoice.payment_intent)
+            .maybeSingle();
+
+          if (!existing) {
             await supabase.from("payments").insert({
               subscription_id: subscription.id,
-              amount: invoice.amount_paid / 100,
+              amount: (invoice.amount_paid ?? 0) / 100,
               status: "completed",
               payment_method: "card",
               paid_at: new Date().toISOString(),
               stripe_payment_intent_id: invoice.payment_intent,
             });
-
-            // Ensure asset is active
-            await supabase
-              .from("assets")
-              .update({ status: "active", block_reason: null })
-              .eq("id", subscription.asset_id);
           }
         }
+
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: "active",
+            payment_status: "paid",
+            payment_failed_attempts: 0,
+            payment_failed_invoice_id: null,
+            access_block_reason: null,
+            blocked_at: null,
+          })
+          .eq("id", subscription.id);
+
+        // Only auto-unblock when the block came from payment failure (or no reason recorded)
+        const reason = subscription.access_block_reason;
+        if (!reason || reason === "payment_failed") {
+          await supabase
+            .from("assets")
+            .update({ status: "active", block_reason: null })
+            .eq("id", subscription.asset_id);
+        }
+
+        await supabase.from("access_logs").insert({
+          asset_id: subscription.asset_id,
+          action: "invoice_paid",
+          details: { invoice_id: invoice.id, amount_paid: invoice.amount_paid },
+        });
         break;
       }
 
+      // Dunning: Stripe retries; we only block from the 3rd failed attempt on
       case "invoice.payment_failed": {
         const invoice = event.data.object;
         const stripeSubscriptionId = invoice.subscription;
+        if (!stripeSubscriptionId) break;
 
-        if (stripeSubscriptionId) {
-          const { data: subscription } = await supabase
-            .from("subscriptions")
-            .select("id, asset_id")
-            .eq("stripe_subscription_id", stripeSubscriptionId)
-            .single();
+        const { data: subscription } = await supabase
+          .from("subscriptions")
+          .select("id, asset_id, access_block_reason")
+          .eq("stripe_subscription_id", stripeSubscriptionId)
+          .maybeSingle();
 
-          if (subscription) {
-            // Update subscription status
+        if (!subscription) {
+          console.log("No local subscription for", stripeSubscriptionId);
+          break;
+        }
+
+        // Attempts are always taken from the invoice itself (never incremented locally)
+        const attemptCount: number = invoice.attempt_count ?? 1;
+        const shouldBlock = attemptCount >= MAX_FAILED_ATTEMPTS;
+
+        // Out-of-order protection: confirm the invoice is really unpaid before blocking
+        if (shouldBlock && stripeSettings.secret_key_encrypted) {
+          const currentStatus = await fetchInvoiceStatus(invoice.id, stripeSettings.secret_key_encrypted);
+          if (currentStatus === "paid") {
+            console.log("Invoice already paid on Stripe, skipping block:", invoice.id);
             await supabase
               .from("subscriptions")
-              .update({ status: "overdue" })
-              .eq("id", subscription.id);
-
-            // Block the asset
-            await supabase
-              .from("assets")
               .update({
-                status: "blocked",
-                block_reason: "Pagamento não aprovado",
+                status: "active",
+                payment_status: "paid",
+                payment_failed_attempts: 0,
+                payment_failed_invoice_id: null,
+                access_block_reason: null,
+                blocked_at: null,
               })
-              .eq("id", subscription.asset_id);
-
-            // Log the block
-            await supabase.from("access_logs").insert({
-              asset_id: subscription.asset_id,
-              action: "payment_failed",
-              details: {
-                invoice_id: invoice.id,
-                attempt_count: invoice.attempt_count,
-              },
-            });
+              .eq("id", subscription.id);
+            break;
           }
         }
+
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: shouldBlock ? "overdue" : "active",
+            payment_status: shouldBlock ? "blocked" : "past_due",
+            payment_failed_attempts: attemptCount,
+            payment_failed_invoice_id: invoice.id,
+            access_block_reason: shouldBlock ? "payment_failed" : null,
+            blocked_at: shouldBlock ? new Date().toISOString() : null,
+          })
+          .eq("id", subscription.id);
+
+        if (shouldBlock) {
+          await supabase
+            .from("assets")
+            .update({ status: "blocked", block_reason: "Pagamento não aprovado" })
+            .eq("id", subscription.asset_id);
+        }
+
+        await supabase.from("access_logs").insert({
+          asset_id: subscription.asset_id,
+          action: shouldBlock ? "payment_failed_blocked" : "payment_failed_grace",
+          details: {
+            invoice_id: invoice.id,
+            attempt_count: attemptCount,
+            blocked: shouldBlock,
+          },
+        });
         break;
       }
 
       case "customer.subscription.deleted": {
-        const subscription = event.data.object;
-        
+        const stripeSub = event.data.object;
+
         const { data: dbSubscription } = await supabase
           .from("subscriptions")
           .select("id, asset_id")
-          .eq("stripe_subscription_id", subscription.id)
-          .single();
+          .eq("stripe_subscription_id", stripeSub.id)
+          .maybeSingle();
 
         if (dbSubscription) {
           await supabase
             .from("subscriptions")
-            .update({ status: "cancelled" })
+            .update({
+              status: "cancelled",
+              access_block_reason: "subscription_canceled",
+              blocked_at: new Date().toISOString(),
+            })
             .eq("id", dbSubscription.id);
 
           await supabase
             .from("assets")
-            .update({
-              status: "blocked",
-              block_reason: "Assinatura cancelada",
-            })
+            .update({ status: "blocked", block_reason: "Assinatura cancelada" })
             .eq("id", dbSubscription.asset_id);
+
+          await supabase.from("access_logs").insert({
+            asset_id: dbSubscription.asset_id,
+            action: "subscription_canceled",
+            details: { stripe_subscription_id: stripeSub.id },
+          });
         }
         break;
       }
