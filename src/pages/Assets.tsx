@@ -142,6 +142,7 @@ export default function Assets() {
       status: asset.status as 'active' | 'blocked',
       block_reason: asset.block_reason || '',
       infoproduct_url: (asset as any).infoproduct_url || '',
+      stripe_price_id: (asset as any).stripe_price_id || '',
     });
     setIsDialogOpen(true);
   };
