@@ -481,11 +481,34 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_webhook_events: {
+        Row: {
+          event_type: string
+          id: string
+          processed_at: string
+          stripe_event_id: string
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          processed_at?: string
+          stripe_event_id: string
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          processed_at?: string
+          stripe_event_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
+          access_block_reason: string | null
           asset_id: string
           auto_charge_enabled: boolean
           billing_type: string
+          blocked_at: string | null
           country: string
           created_at: string
           due_date: string
@@ -496,6 +519,9 @@ export type Database = {
           next_billing_date: string | null
           notification_days_count: number | null
           notification_started_at: string | null
+          payment_failed_attempts: number
+          payment_failed_invoice_id: string | null
+          payment_status: string
           plan_name: string
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
@@ -504,9 +530,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_block_reason?: string | null
           asset_id: string
           auto_charge_enabled?: boolean
           billing_type?: string
+          blocked_at?: string | null
           country?: string
           created_at?: string
           due_date: string
@@ -517,6 +545,9 @@ export type Database = {
           next_billing_date?: string | null
           notification_days_count?: number | null
           notification_started_at?: string | null
+          payment_failed_attempts?: number
+          payment_failed_invoice_id?: string | null
+          payment_status?: string
           plan_name: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
@@ -525,9 +556,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_block_reason?: string | null
           asset_id?: string
           auto_charge_enabled?: boolean
           billing_type?: string
+          blocked_at?: string | null
           country?: string
           created_at?: string
           due_date?: string
@@ -538,6 +571,9 @@ export type Database = {
           next_billing_date?: string | null
           notification_days_count?: number | null
           notification_started_at?: string | null
+          payment_failed_attempts?: number
+          payment_failed_invoice_id?: string | null
+          payment_status?: string
           plan_name?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
