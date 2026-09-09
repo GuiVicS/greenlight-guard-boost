@@ -58,9 +58,10 @@ export default function Assets() {
 
   const fetchData = async () => {
     try {
-      const [assetsRes, clientsRes] = await Promise.all([
+      const [assetsRes, clientsRes, stripeRes] = await Promise.all([
         supabase.from('assets').select('*, clients(name)').order('created_at', { ascending: false }),
         supabase.from('clients').select('id, name'),
+        supabase.from('stripe_settings').select('is_enabled, is_configured').maybeSingle(),
       ]);
 
       if (assetsRes.error) throw assetsRes.error;
@@ -68,6 +69,7 @@ export default function Assets() {
 
       setAssets(assetsRes.data || []);
       setClients(clientsRes.data || []);
+      setStripeEnabled(Boolean(stripeRes.data?.is_enabled && stripeRes.data?.is_configured));
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
