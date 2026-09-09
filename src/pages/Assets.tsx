@@ -49,7 +49,9 @@ export default function Assets() {
     status: 'active' as 'active' | 'blocked',
     block_reason: '',
     infoproduct_url: '',
+    stripe_price_id: '',
   });
+  const [stripeEnabled, setStripeEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
