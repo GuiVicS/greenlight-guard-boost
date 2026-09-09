@@ -120,7 +120,7 @@ export default function Assets() {
 
       setIsDialogOpen(false);
       setEditingAsset(null);
-      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '' });
+      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '' });
       fetchData();
     } catch (error: any) {
       toast({
