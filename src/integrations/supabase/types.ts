@@ -90,6 +90,7 @@ export type Database = {
           name: string
           public_key: string
           status: Database["public"]["Enums"]["asset_status"]
+          stripe_price_id: string | null
           type: Database["public"]["Enums"]["asset_type"]
           updated_at: string
         }
@@ -109,6 +110,7 @@ export type Database = {
           name: string
           public_key?: string
           status?: Database["public"]["Enums"]["asset_status"]
+          stripe_price_id?: string | null
           type?: Database["public"]["Enums"]["asset_type"]
           updated_at?: string
         }
@@ -128,6 +130,7 @@ export type Database = {
           name?: string
           public_key?: string
           status?: Database["public"]["Enums"]["asset_status"]
+          stripe_price_id?: string | null
           type?: Database["public"]["Enums"]["asset_type"]
           updated_at?: string
         }
