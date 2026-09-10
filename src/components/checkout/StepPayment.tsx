@@ -161,6 +161,14 @@ export function StepPayment({
             {cardGateway === 'stripe' ? (
               // Pagamento com cartão no próprio checkout (transparente)
               <>
+                {isRecurring && !creatingIntent && (
+                  <p className={`text-sm mb-4 text-center ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                    {country === 'BR'
+                      ? 'Assinatura mensal recorrente. O cartão será cobrado automaticamente todo mês.'
+                      : 'Monthly recurring subscription. Your card will be charged automatically each month.'}
+                  </p>
+                )}
+
                 {creatingIntent ? (
                   <div className="flex items-center justify-center py-16">
                     <div className="text-center">
