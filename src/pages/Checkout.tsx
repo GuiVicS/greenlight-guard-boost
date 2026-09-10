@@ -198,8 +198,8 @@ export default function Checkout() {
   // Regra fixa: cartão e boleto sempre pela Stripe; Pix sempre pelo Mercado Pago
   const methodUsesStripe = (method: string): boolean => method === 'card' || method === 'boleto';
 
-  // Stripe subscription checkout uses a hosted Checkout Session when a recurring price_id is linked.
-  const shouldUseStripeSubscriptionCheckout = (method: string): boolean => {
+  // Assinatura recorrente com price recorrente na Stripe: pagamento transparente (sem checkout hospedado)
+  const isRecurringCard = (method: string): boolean => {
     if (method !== 'card') return false;
     const priceId = subscription?.asset.stripe_price_id || subscription?.stripe_price_id;
     return methodUsesStripe(method) && !!priceId;
@@ -214,26 +214,30 @@ export default function Checkout() {
       return;
     }
 
-    // For Stripe subscriptions, use hosted checkout instead of embedded Elements
-    if (shouldUseStripeSubscriptionCheckout(method)) {
-      console.log(`Subscription has Stripe price_id; skipping PaymentIntent, will use Checkout Session`);
-      return;
-    }
-
     setCreatingIntent(true);
     setClientSecret(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("create-payment-intent", {
-        body: {
-          subscriptionId: subscription.id,
-          paymentMethod: method,
-          // Salvar cartão para débito automático quando for pagamento com cartão
-          saveCardForAutoCharge: method === "card",
+      const recurring = isRecurringCard(method);
+      const { data, error } = await supabase.functions.invoke(
+        recurring ? "create-subscription-intent" : "create-payment-intent",
+        {
+          body: recurring
+            ? {
+                subscriptionId: subscription.id,
+                customer: { name: customerData.name, email: customerData.email },
+              }
+            : {
+                subscriptionId: subscription.id,
+                paymentMethod: method,
+                // Salvar cartão para débito automático quando for pagamento com cartão
+                saveCardForAutoCharge: method === "card",
+              },
         },
-      });
+      );
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       if (data.publishableKey) {
         setStripePromise(loadStripe(data.publishableKey));
@@ -256,16 +260,14 @@ export default function Checkout() {
 
   const handleGoToPayment = () => {
     setCurrentStep(2);
-    // Only create Stripe payment intent if the method uses Stripe and is not a subscription checkout
-    if (subscription && !clientSecret && paymentMethod !== "pix" && methodUsesStripe(paymentMethod) && !shouldUseStripeSubscriptionCheckout(paymentMethod)) {
+    if (subscription && !clientSecret && paymentMethod !== "pix" && methodUsesStripe(paymentMethod)) {
       createPaymentIntent(paymentMethod as "card" | "boleto");
     }
   };
 
   const handlePaymentMethodChange = (method: "card" | "boleto" | "pix") => {
     setPaymentMethod(method);
-    // Only create Stripe payment intent if the method uses Stripe and is not a subscription checkout
-    if (method !== "pix" && methodUsesStripe(method) && !shouldUseStripeSubscriptionCheckout(method)) {
+    if (method !== "pix" && methodUsesStripe(method)) {
       createPaymentIntent(method);
     }
   };
