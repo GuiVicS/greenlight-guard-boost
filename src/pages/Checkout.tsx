@@ -268,17 +268,35 @@ export default function Checkout() {
 
   const handleGoToPayment = () => {
     setCurrentStep(2);
-    if (subscription && !clientSecret && paymentMethod !== "pix" && methodUsesStripe(paymentMethod)) {
+    // Só inicia o PaymentIntent automaticamente para boleto. Cartão recorrente aguarda confirmação explícita.
+    if (
+      subscription &&
+      !clientSecret &&
+      paymentMethod !== "pix" &&
+      methodUsesStripe(paymentMethod) &&
+      !isRecurringCard(paymentMethod)
+    ) {
       createPaymentIntent(paymentMethod as "card" | "boleto");
     }
   };
 
   const handlePaymentMethodChange = (method: "card" | "boleto" | "pix") => {
     setPaymentMethod(method);
-    if (method !== "pix" && methodUsesStripe(method)) {
+    if (
+      method !== "pix" &&
+      methodUsesStripe(method) &&
+      !isRecurringCard(method)
+    ) {
       createPaymentIntent(method);
     }
   };
+
+  const handleStartRecurringPayment = () => {
+    if (isRecurringCard("card")) {
+      createPaymentIntent("card");
+    }
+  };
+
 
   const handlePaymentSuccess = async () => {
     setCurrentStep(3);
@@ -526,7 +544,9 @@ export default function Checkout() {
                 returnUrl={returnUrl || undefined}
                 paymentMethods={paymentMethods}
                 stripePriceId={subscription.asset.stripe_price_id || subscription.stripe_price_id}
+                onStartPayment={handleStartRecurringPayment}
               />
+
             )}
           </div>
 
