@@ -61,6 +61,7 @@ export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme
         />
       </div>
 
+      {config.requiresDocument !== false && (
       <div className="space-y-2">
         <Label htmlFor="document" className={`flex items-center gap-2 text-sm font-medium ${isDarkTheme ? 'text-slate-300' : 'text-slate-700'}`}>
           <FileText className="h-4 w-4" style={{ color: primaryColor }} />
@@ -76,6 +77,7 @@ export function CustomerForm({ customerData, onChange, primaryColor, isDarkTheme
             : 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-400'}`}
         />
       </div>
+      )}
     </div>
   );
 }

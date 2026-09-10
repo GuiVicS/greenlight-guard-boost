@@ -10,6 +10,7 @@ interface CountryConfig {
   documentPlaceholder: string;
   documentMask?: (value: string) => string;
   namePlaceholder: string;
+  requiresDocument?: boolean;
 }
 
 const countryConfigs: Record<CountryCode, CountryConfig> = {
@@ -27,6 +28,7 @@ const countryConfigs: Record<CountryCode, CountryConfig> = {
         .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     },
     namePlaceholder: 'ex: Maria de Almeida Cruz',
+    requiresDocument: true,
   },
   US: {
     currency: 'usd',
@@ -41,6 +43,7 @@ const countryConfigs: Record<CountryCode, CountryConfig> = {
         .replace(/(\d{2})(\d)/, "$1-$2");
     },
     namePlaceholder: 'e.g. John Smith',
+    requiresDocument: false,
   },
   PT: {
     currency: 'eur',

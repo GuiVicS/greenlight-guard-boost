@@ -403,19 +403,27 @@ export default function Checkout() {
                 <CheckCircle className="h-10 w-10" style={{ color: primaryColor }} />
               </div>
               <h2 className={`text-2xl font-bold mb-3 ${isDarkTheme ? 'text-white' : ''}`}>
-                {subscription.asset.type === 'infoproduct' ? 'Acesso Liberado!' : t.allGood}
+                {subscription.asset.type === 'infoproduct'
+                  ? (isGlobalCheckout ? 'Access released!' : 'Acesso Liberado!')
+                  : t.allGood}
               </h2>
               <p className={`mb-4 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                {subscription.asset.type === 'infoproduct' 
-                  ? 'Seu pagamento foi aprovado e seu acesso foi liberado!'
-                  : 'Seu pagamento foi aprovado e o site foi desbloqueado!'}
+                {isGlobalCheckout
+                  ? (subscription.asset.type === 'infoproduct'
+                    ? 'Your payment was approved and your access is now available!'
+                    : 'Your payment was approved and the website has been unblocked!')
+                  : (subscription.asset.type === 'infoproduct'
+                    ? 'Seu pagamento foi aprovado e seu acesso foi liberado!'
+                    : 'Seu pagamento foi aprovado e o site foi desbloqueado!')}
               </p>
               
               {(redirectUrl) && (
                 <p className={`text-sm ${isDarkTheme ? 'text-slate-500' : 'text-muted-foreground'}`}>
-                  {subscription.asset.type === 'infoproduct' 
-                    ? 'Redirecionando para o conteúdo em alguns segundos...'
-                    : 'Redirecionando para o site em alguns segundos...'}
+                  {isGlobalCheckout
+                    ? 'Redirecting you in a few seconds...'
+                    : (subscription.asset.type === 'infoproduct'
+                      ? 'Redirecionando para o conteúdo em alguns segundos...'
+                      : 'Redirecionando para o site em alguns segundos...')}
                 </p>
               )}
               
@@ -425,7 +433,9 @@ export default function Checkout() {
                   className="mt-4 px-6 py-2 rounded-lg text-white font-medium transition-colors"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  {subscription.asset.type === 'infoproduct' ? 'Acessar conteúdo agora' : 'Ir para o site agora'}
+                  {isGlobalCheckout
+                    ? (subscription.asset.type === 'infoproduct' ? 'Access content now' : 'Go to the website now')
+                    : (subscription.asset.type === 'infoproduct' ? 'Acessar conteúdo agora' : 'Ir para o site agora')}
                 </button>
               )}
             </CardContent>
