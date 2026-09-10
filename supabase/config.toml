@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.create-stripe-recurring-price]
 verify_jwt = false
+
+[functions.evolution-instance]
+verify_jwt = false

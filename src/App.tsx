@@ -17,6 +17,7 @@ import StripeIntegration from "./pages/StripeIntegration";
 import PaymentGatewaysSettings from "./pages/PaymentGatewaysSettings";
 import Integrations from "./pages/Integrations";
 import BillingIntegration from "./pages/BillingIntegration";
+import WhatsAppIntegration from "./pages/WhatsAppIntegration";
 import Settings from "./pages/Settings";
 import Checkout from "./pages/Checkout";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
@@ -139,6 +140,14 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <BillingIntegration />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/integrations/whatsapp"
+      element={
+        <ProtectedRoute>
+          <WhatsAppIntegration />
         </ProtectedRoute>
       }
     />

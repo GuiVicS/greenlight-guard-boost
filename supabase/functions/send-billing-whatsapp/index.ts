@@ -30,24 +30,37 @@ Deno.serve(async (req) => {
 
     console.log(`Sending WhatsApp to ${phone} for attempt ${attemptId}`);
 
-    // Get billing settings for Evolution API config
+    // Get billing settings (message template + legacy Evolution config)
     const { data: settings } = await supabase
       .from("billing_settings")
       .select("evolution_api_url, evolution_instance, whatsapp_message_template")
       .maybeSingle();
 
-    if (!settings?.evolution_api_url || !settings?.evolution_instance) {
+    // Preferred source: instance connected through the Evolution integration screen
+    const { data: evo } = await supabase
+      .from("evolution_settings")
+      .select("server_url, global_api_key, instance_name, instance_token, connection_state")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const baseUrl = (evo?.server_url || settings?.evolution_api_url || "").replace(/\/+$/, "");
+    const instanceName = evo?.instance_name || settings?.evolution_instance;
+    const evolutionApiKey =
+      evo?.instance_token || evo?.global_api_key || Deno.env.get("EVOLUTION_API_KEY");
+
+    if (!baseUrl || !instanceName) {
       throw new Error("Evolution API not configured");
     }
-
-    // Get Evolution API key from secrets
-    const evolutionApiKey = Deno.env.get("EVOLUTION_API_KEY");
     if (!evolutionApiKey) {
-      throw new Error("EVOLUTION_API_KEY not configured");
+      throw new Error("Evolution API key not configured");
+    }
+    if (evo?.instance_name && evo.connection_state !== "open") {
+      throw new Error("WhatsApp instance is not connected");
     }
 
     // Process message template
-    let messageTemplate = settings.whatsapp_message_template || `Olá {{client_name}}! 👋
+    let messageTemplate = settings?.whatsapp_message_template || `Olá {{client_name}}! 👋
 
 Seu pagamento de R$ {{amount}} do plano {{plan_name}} está pendente desde {{due_date}}.
 
@@ -79,7 +92,7 @@ Qualquer dúvida, estamos à disposição!`;
     const formattedPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
 
     // Send via Evolution API
-    const evolutionUrl = `${settings.evolution_api_url}/message/sendText/${settings.evolution_instance}`;
+    const evolutionUrl = `${baseUrl}/message/sendText/${instanceName}`;
     
     const evolutionResponse = await fetch(evolutionUrl, {
       method: "POST",
