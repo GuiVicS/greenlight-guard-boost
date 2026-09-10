@@ -500,7 +500,7 @@ export default function PaymentGatewaysSettings() {
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {mpSettings.is_configured 
-                    ? 'Pix, Cartão de Crédito/Débito e Boleto' 
+                    ? 'Pix (exclusivo)' 
                     : 'Insira suas credenciais para ativar'}
                 </p>
               </div>
@@ -618,7 +618,7 @@ export default function PaymentGatewaysSettings() {
 
             {(() => {
               const mpMethods = paymentMethods
-                .filter((m) => m.gateway_type === 'mercadopago')
+                .filter((m) => m.gateway_type === 'mercadopago' && m.method_name === 'pix')
                 // dedupe por method_name (evita repetir Pix caso haja duplicata no banco/cache)
                 .reduce<PaymentMethodConfig[]>((acc, cur) => {
                   if (acc.some((m) => m.method_name === cur.method_name)) return acc;
@@ -629,6 +629,9 @@ export default function PaymentGatewaysSettings() {
               return (
                 <div className="glass-card p-6 space-y-4">
                   <h3 className="font-medium text-foreground">Métodos de Pagamento</h3>
+                  <p className="text-xs text-muted-foreground">
+                    O Mercado Pago é usado exclusivamente para Pix. Cartão e Boleto são processados pela Stripe.
+                  </p>
                   {mpMethods.map((method) => (
                     <div key={method.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                       <div className="flex items-center gap-3">

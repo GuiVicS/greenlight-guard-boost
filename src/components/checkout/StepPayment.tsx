@@ -73,15 +73,10 @@ export function StepPayment({
   const { toast } = useToast();
   const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState(false);
 
-  // Determine which gateway to use for each payment method
-  const getGatewayForMethod = (method: string): string => {
-    const config = paymentMethods.find(m => m.method_name === method && m.is_enabled);
-    return config?.gateway_type || 'mercadopago';
-  };
-
-  const cardGateway = getGatewayForMethod('card');
-  const boletoGateway = getGatewayForMethod('boleto');
-  const pixGateway = getGatewayForMethod('pix');
+  // Regra fixa: Stripe processa cartão e boleto; Mercado Pago é usado apenas para Pix
+  const cardGateway = 'stripe';
+  const boletoGateway = 'stripe';
+  const pixGateway = 'mercadopago';
 
   // Calculate grid columns based on available methods
   const methodCount = (showCard ? 1 : 0) + (showBoleto ? 1 : 0) + (showPix ? 1 : 0);
