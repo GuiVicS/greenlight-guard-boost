@@ -9,7 +9,8 @@ import { BoletoPaymentForm } from "./BoletoPaymentForm";
 import { PixPaymentForm } from "./PixPaymentForm";
 import { MercadoPagoCardForm } from "./MercadoPagoCardForm";
 import { MercadoPagoBoletoForm } from "./MercadoPagoBoletoForm";
-import { getTranslations } from "@/lib/checkout-utils";
+import { formatCurrency, getTranslations } from "@/lib/checkout-utils";
+
 
 
 
