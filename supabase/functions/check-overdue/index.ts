@@ -30,6 +30,7 @@ interface OverdueSubscription {
   last_charge_attempt: string | null;
   auto_charge_enabled: boolean;
   stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   assets: {
     id: string;
     name: string;
