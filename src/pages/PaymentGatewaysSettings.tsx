@@ -500,7 +500,7 @@ export default function PaymentGatewaysSettings() {
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {mpSettings.is_configured 
-                    ? 'Pix, Cartão de Crédito/Débito e Boleto' 
+                    ? 'Pix (exclusivo)' 
                     : 'Insira suas credenciais para ativar'}
                 </p>
               </div>
