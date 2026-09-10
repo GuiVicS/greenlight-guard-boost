@@ -198,12 +198,6 @@ export default function Checkout() {
   // Regra fixa: cartão e boleto sempre pela Stripe; Pix sempre pelo Mercado Pago
   const methodUsesStripe = (method: string): boolean => method === 'card' || method === 'boleto';
 
-  // Assinatura recorrente com price recorrente na Stripe: pagamento transparente (sem checkout hospedado)
-  const isRecurringCard = (method: string): boolean => {
-    if (method !== 'card') return false;
-    const priceId = subscription?.asset.stripe_price_id || subscription?.stripe_price_id;
-    return methodUsesStripe(method) && !!priceId;
-  };
 
   const createPaymentIntent = async (method: "card" | "boleto") => {
     if (!subscription) return;
@@ -268,13 +262,13 @@ export default function Checkout() {
 
   const handleGoToPayment = () => {
     setCurrentStep(2);
-    // Só inicia o PaymentIntent automaticamente para boleto. Cartão recorrente aguarda confirmação explícita.
+    // Inicia o pagamento Stripe automaticamente (cartão e boleto), inclusive recorrente:
+    // a cobrança só acontece após o cliente preencher o formulário e confirmar.
     if (
       subscription &&
       !clientSecret &&
       paymentMethod !== "pix" &&
-      methodUsesStripe(paymentMethod) &&
-      !isRecurringCard(paymentMethod)
+      methodUsesStripe(paymentMethod)
     ) {
       createPaymentIntent(paymentMethod as "card" | "boleto");
     }
@@ -282,20 +276,12 @@ export default function Checkout() {
 
   const handlePaymentMethodChange = (method: "card" | "boleto" | "pix") => {
     setPaymentMethod(method);
-    if (
-      method !== "pix" &&
-      methodUsesStripe(method) &&
-      !isRecurringCard(method)
-    ) {
+    if (method !== "pix" && methodUsesStripe(method)) {
       createPaymentIntent(method);
     }
   };
 
-  const handleStartRecurringPayment = () => {
-    if (isRecurringCard("card")) {
-      createPaymentIntent("card");
-    }
-  };
+
 
 
   const handlePaymentSuccess = async () => {
