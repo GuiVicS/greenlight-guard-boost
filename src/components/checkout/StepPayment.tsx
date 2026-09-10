@@ -67,7 +67,6 @@ export function StepPayment({
   returnUrl,
   paymentMethods,
   stripePriceId,
-  onStartPayment,
 }: StepPaymentProps) {
   const country = subscription.country || 'BR';
   const t = getTranslations(country);
@@ -89,8 +88,6 @@ export function StepPayment({
     (paymentMethod === 'boleto' && boletoGateway === 'stripe')
   );
 
-  // Assinatura recorrente é cobrada de forma transparente no próprio checkout
-  const isRecurring = paymentMethod === 'card' && cardGateway === 'stripe' && !!stripePriceId;
 
   return (
     <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
@@ -164,19 +161,6 @@ export function StepPayment({
             {cardGateway === 'stripe' ? (
               // Pagamento com cartão no próprio checkout (transparente)
               <>
-                {isRecurring && !creatingIntent && !clientSecret && onStartPayment && (
-                  <Button
-                    onClick={onStartPayment}
-                    className="w-full h-14 text-base font-semibold rounded-xl shadow-lg transition-all hover:shadow-xl"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    {country === 'BR'
-                      ? `Confirmar pagamento recorrente de ${formatCurrency?.(subscription.monthly_value, country) || ''}`
-                      : `Confirm recurring payment of ${formatCurrency?.(subscription.monthly_value, country) || ''}`}
-                  </Button>
-                )}
-
-
                 {creatingIntent ? (
                   <div className="flex items-center justify-center py-16">
                     <div className="text-center">
