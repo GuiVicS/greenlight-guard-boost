@@ -106,22 +106,42 @@ Deno.serve(async (req) => {
       return json({ error: stripeSub.error.message });
     }
 
-    const paymentIntent = stripeSub.latest_invoice?.payment_intent;
+    const invoice = stripeSub.latest_invoice;
+    const paymentIntent = invoice?.payment_intent;
+
+    // Invoice already settled (customer had a saved default card): treat as paid
+    if (!paymentIntent?.client_secret && (invoice?.status === "paid" || invoice?.paid)) {
+      await supabase.from("payments").insert({
+        subscription_id: subscriptionId,
+        amount: subscription.monthly_value,
+        status: "completed",
+        payment_method: "card",
+        paid_at: new Date().toISOString(),
+      });
+      await supabase
+        .from("subscriptions")
+        .update({ stripe_subscription_id: stripeSub.id, status: "active" })
+        .eq("id", subscriptionId);
+
+      return json({ alreadyPaid: true, stripeSubscriptionId: stripeSub.id });
+    }
+
     if (!paymentIntent?.client_secret) {
       console.error("No payment intent on invoice:", JSON.stringify({
         subscription_status: stripeSub.status,
-        invoice_status: stripeSub.latest_invoice?.status,
-        invoice_total: stripeSub.latest_invoice?.total,
-        currency: stripeSub.latest_invoice?.currency,
-        last_finalization_error: stripeSub.latest_invoice?.last_finalization_error,
+        invoice_status: invoice?.status,
+        invoice_total: invoice?.total,
+        currency: invoice?.currency,
+        last_finalization_error: invoice?.last_finalization_error,
       }));
-      const finErr = stripeSub.latest_invoice?.last_finalization_error?.message;
+      const finErr = invoice?.last_finalization_error?.message;
       return json({
         error: finErr
           ? `Stripe: ${finErr}`
           : "Não foi possível iniciar o pagamento da assinatura",
       });
     }
+
 
 
     // Register a pending payment locally

@@ -180,11 +180,26 @@ Deno.serve(async (req) => {
 
     if (paymentIntent.error) {
       console.error("Stripe error:", paymentIntent.error);
+      await supabase.from("payments").update({ status: "failed" }).eq("id", payment.id);
+
+      const code = paymentIntent.error.code || "";
+      const raw = paymentIntent.error.message || "Erro ao iniciar o pagamento";
+      const isBR = country === "BR";
+      let friendly = raw;
+      if (code === "amount_too_small") {
+        friendly = isBR
+          ? "O valor da cobrança é menor que o mínimo aceito pelo cartão/boleto (R$ 5,00). Ajuste o valor da assinatura."
+          : "The amount is below the minimum accepted by the payment provider.";
+      } else if (code === "amount_too_large") {
+        friendly = isBR ? "O valor da cobrança excede o máximo permitido." : "The amount exceeds the maximum allowed.";
+      }
+
       return new Response(
-        JSON.stringify({ error: paymentIntent.error.message }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        JSON.stringify({ error: friendly, code }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
+
 
     // Update payment with stripe payment intent id
     await supabase

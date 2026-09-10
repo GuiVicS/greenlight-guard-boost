@@ -243,9 +243,17 @@ export default function Checkout() {
         setStripePromise(loadStripe(data.publishableKey));
       }
 
+      // Fatura já quitada com o cartão salvo do cliente
+      if (data.alreadyPaid) {
+        setCreatingIntent(false);
+        await handlePaymentSuccess();
+        return;
+      }
+
       if (data.clientSecret) {
         setClientSecret(data.clientSecret);
       }
+
     } catch (error: any) {
       console.error("Payment intent error:", error);
       toast({
