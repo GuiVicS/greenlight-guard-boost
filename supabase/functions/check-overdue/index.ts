@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
         last_charge_attempt,
         auto_charge_enabled,
         stripe_customer_id,
+        stripe_subscription_id,
         assets!inner (
           id,
           name,
