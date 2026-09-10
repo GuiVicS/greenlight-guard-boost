@@ -47,6 +47,21 @@ async function verifyStripeSignature(
 }
 
 // Re-check invoice status directly with Stripe to avoid out-of-order events
+// Dispatch outbound webhook event to configured endpoints
+async function dispatchWebhook(
+  supabase: any,
+  event: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await supabase.functions.invoke("webhook-dispatcher", {
+      body: { event, data: payload },
+    });
+  } catch (e) {
+    console.error(`[stripe-webhook] Failed to dispatch ${event}:`, e);
+  }
+}
+
 async function fetchInvoiceStatus(
   invoiceId: string,
   secretKey: string,
