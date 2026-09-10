@@ -365,6 +365,32 @@ const WebhooksSettings = () => {
           </Dialog>
         </div>
 
+        <IntegrationWizard
+          title="Assistente de configuração — Webhooks"
+          steps={[
+            {
+              title: 'Crie um endpoint',
+              description: 'Clique em "Novo Webhook" e informe um nome e a URL do sistema que vai receber os eventos.',
+              done: endpoints.length > 0,
+            },
+            {
+              title: 'Escolha os eventos',
+              description: 'Selecione quais eventos serão enviados (pagamentos, assinaturas, ativos, clientes).',
+              done: endpoints.some(e => (e.events?.length ?? 0) > 0),
+            },
+            {
+              title: 'Valide a assinatura no seu sistema',
+              description: 'Use o secret gerado para conferir o cabeçalho de assinatura HMAC-SHA256 de cada entrega.',
+              done: endpoints.length > 0,
+            },
+            {
+              title: 'Ative o endpoint e acompanhe as entregas',
+              description: 'Ligue a chave do endpoint e confira o histórico de entregas para verificar sucessos e falhas.',
+              done: endpoints.some(e => e.is_enabled),
+            },
+          ]}
+        />
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
