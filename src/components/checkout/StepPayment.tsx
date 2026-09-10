@@ -3,13 +3,16 @@ import { Elements } from "@stripe/react-stripe-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, CreditCard, FileText, ArrowLeft, Wallet, QrCode } from "lucide-react";
+import { Loader2, CreditCard, FileText, ArrowLeft, Wallet, QrCode, ExternalLink } from "lucide-react";
+import { useState } from "react";
 import { CardPaymentForm } from "./CardPaymentForm";
 import { BoletoPaymentForm } from "./BoletoPaymentForm";
 import { PixPaymentForm } from "./PixPaymentForm";
 import { MercadoPagoCardForm } from "./MercadoPagoCardForm";
 import { MercadoPagoBoletoForm } from "./MercadoPagoBoletoForm";
 import { getTranslations } from "@/lib/checkout-utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface PaymentMethodConfig {
   method_name: string;
