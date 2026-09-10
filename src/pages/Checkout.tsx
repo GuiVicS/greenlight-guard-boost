@@ -492,6 +492,7 @@ export default function Checkout() {
                 showCard={showCard || (!showPix && !showBoleto)}
                 returnUrl={returnUrl || undefined}
                 paymentMethods={paymentMethods}
+                stripePriceId={subscription.asset.stripe_price_id || subscription.stripe_price_id}
               />
             )}
           </div>
