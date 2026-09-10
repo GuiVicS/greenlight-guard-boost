@@ -3,16 +3,15 @@ import { Elements } from "@stripe/react-stripe-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, CreditCard, FileText, ArrowLeft, Wallet, QrCode, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { Loader2, CreditCard, FileText, ArrowLeft, Wallet, QrCode } from "lucide-react";
 import { CardPaymentForm } from "./CardPaymentForm";
 import { BoletoPaymentForm } from "./BoletoPaymentForm";
 import { PixPaymentForm } from "./PixPaymentForm";
 import { MercadoPagoCardForm } from "./MercadoPagoCardForm";
 import { MercadoPagoBoletoForm } from "./MercadoPagoBoletoForm";
 import { getTranslations } from "@/lib/checkout-utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+
+
 
 interface PaymentMethodConfig {
   method_name: string;
@@ -70,8 +69,8 @@ export function StepPayment({
   const country = subscription.country || 'BR';
   const t = getTranslations(country);
   const locale = country === 'BR' ? 'pt-BR' : country === 'PT' ? 'pt' : country === 'ES' || country === 'MX' ? 'es' : 'en';
-  const { toast } = useToast();
-  const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState(false);
+
+
 
   // Regra fixa: Stripe processa cartão e boleto; Mercado Pago é usado apenas para Pix
   const cardGateway = 'stripe';
