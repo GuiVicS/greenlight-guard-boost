@@ -57,7 +57,11 @@ export default function Subscriptions() {
     due_date: '',
     status: 'active' as 'active' | 'overdue' | 'cancelled',
     country: 'BR',
+    stripe_recurring: false,
   });
+  const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripeConfigured, setStripeConfigured] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
