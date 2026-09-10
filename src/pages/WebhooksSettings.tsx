@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Webhook, ExternalLink, Copy, Trash2, Eye, Settings2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { IntegrationWizard } from "@/components/integrations/IntegrationWizard";
 
 interface WebhookEndpointDB {
   id: string;
