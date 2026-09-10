@@ -80,6 +80,7 @@ export type Database = {
           checkout_favicon_url: string | null
           checkout_logo_url: string | null
           checkout_message: string | null
+          checkout_mode: string
           checkout_primary_color: string | null
           checkout_theme: string | null
           checkout_title: string | null
@@ -100,6 +101,7 @@ export type Database = {
           checkout_favicon_url?: string | null
           checkout_logo_url?: string | null
           checkout_message?: string | null
+          checkout_mode?: string
           checkout_primary_color?: string | null
           checkout_theme?: string | null
           checkout_title?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           checkout_favicon_url?: string | null
           checkout_logo_url?: string | null
           checkout_message?: string | null
+          checkout_mode?: string
           checkout_primary_color?: string | null
           checkout_theme?: string | null
           checkout_title?: string | null

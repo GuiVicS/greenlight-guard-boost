@@ -21,6 +21,7 @@ interface SubscriptionData {
     id: string;
     name: string;
     type: string;
+    checkout_mode: string | null;
     stripe_price_id: string | null;
     infoproduct_url: string | null;
     checkout_logo_url: string | null;
@@ -102,6 +103,7 @@ export default function Checkout() {
             id,
             name,
             type,
+            checkout_mode,
             stripe_price_id,
             infoproduct_url,
             checkout_logo_url,
@@ -315,7 +317,8 @@ export default function Checkout() {
     );
   }
 
-  const country = subscription?.country || 'BR';
+  const isGlobalCheckout = subscription?.asset?.checkout_mode === 'global';
+  const country = isGlobalCheckout ? 'US' : (subscription?.country || 'BR');
   const t = getTranslations(country);
 
   // Tela de erro ao carregar dados
@@ -350,9 +353,9 @@ export default function Checkout() {
 
   const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
   const isDarkTheme = subscription.asset.checkout_theme === 'dark';
-  const showBoleto = paymentMethods.some(m => m.method_name === 'boleto' && m.is_enabled);
-  const showPix = paymentMethods.some(m => m.method_name === 'pix' && m.is_enabled);
-  const showCard = paymentMethods.some(m => m.method_name === 'card' && m.is_enabled);
+  const showBoleto = !isGlobalCheckout && paymentMethods.some(m => m.method_name === 'boleto' && m.is_enabled);
+  const showPix = !isGlobalCheckout && paymentMethods.some(m => m.method_name === 'pix' && m.is_enabled);
+  const showCard = isGlobalCheckout || paymentMethods.some(m => m.method_name === 'card' && m.is_enabled);
   const formattedAmount = formatCurrency(subscription.monthly_value, country);
   
   // Determine redirect URL: infoproduct_url takes priority, then return_url
@@ -400,19 +403,27 @@ export default function Checkout() {
                 <CheckCircle className="h-10 w-10" style={{ color: primaryColor }} />
               </div>
               <h2 className={`text-2xl font-bold mb-3 ${isDarkTheme ? 'text-white' : ''}`}>
-                {subscription.asset.type === 'infoproduct' ? 'Acesso Liberado!' : t.allGood}
+                {subscription.asset.type === 'infoproduct'
+                  ? (isGlobalCheckout ? 'Access released!' : 'Acesso Liberado!')
+                  : t.allGood}
               </h2>
               <p className={`mb-4 ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                {subscription.asset.type === 'infoproduct' 
-                  ? 'Seu pagamento foi aprovado e seu acesso foi liberado!'
-                  : 'Seu pagamento foi aprovado e o site foi desbloqueado!'}
+                {isGlobalCheckout
+                  ? (subscription.asset.type === 'infoproduct'
+                    ? 'Your payment was approved and your access is now available!'
+                    : 'Your payment was approved and the website has been unblocked!')
+                  : (subscription.asset.type === 'infoproduct'
+                    ? 'Seu pagamento foi aprovado e seu acesso foi liberado!'
+                    : 'Seu pagamento foi aprovado e o site foi desbloqueado!')}
               </p>
               
               {(redirectUrl) && (
                 <p className={`text-sm ${isDarkTheme ? 'text-slate-500' : 'text-muted-foreground'}`}>
-                  {subscription.asset.type === 'infoproduct' 
-                    ? 'Redirecionando para o conteúdo em alguns segundos...'
-                    : 'Redirecionando para o site em alguns segundos...'}
+                  {isGlobalCheckout
+                    ? 'Redirecting you in a few seconds...'
+                    : (subscription.asset.type === 'infoproduct'
+                      ? 'Redirecionando para o conteúdo em alguns segundos...'
+                      : 'Redirecionando para o site em alguns segundos...')}
                 </p>
               )}
               
@@ -422,7 +433,9 @@ export default function Checkout() {
                   className="mt-4 px-6 py-2 rounded-lg text-white font-medium transition-colors"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  {subscription.asset.type === 'infoproduct' ? 'Acessar conteúdo agora' : 'Ir para o site agora'}
+                  {isGlobalCheckout
+                    ? (subscription.asset.type === 'infoproduct' ? 'Access content now' : 'Go to the website now')
+                    : (subscription.asset.type === 'infoproduct' ? 'Acessar conteúdo agora' : 'Ir para o site agora')}
                 </button>
               )}
             </CardContent>

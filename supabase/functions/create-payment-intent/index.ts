@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
         asset:assets (
           id,
           name,
+          checkout_mode,
           client:clients (
             id,
             name,
@@ -66,8 +67,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine payment methods and currency based on country
-    const country = subscription.country || "BR";
+    // Determine payment methods and currency based on the asset checkout mode (global = USD/card only)
+    const isGlobalCheckout = subscription.asset?.checkout_mode === "global";
+    const country = isGlobalCheckout ? "US" : (subscription.country || "BR");
     const countryConfig: Record<string, { currency: string; methods: string[] }> = {
       BR: { currency: "brl", methods: paymentMethod === "boleto" ? ["boleto"] : ["card"] },
       US: { currency: "usd", methods: ["card"] },

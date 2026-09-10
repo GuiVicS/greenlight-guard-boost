@@ -50,6 +50,7 @@ export default function Assets() {
     block_reason: '',
     infoproduct_url: '',
     stripe_price_id: '',
+    checkout_mode: 'br' as 'br' | 'global',
   });
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -99,6 +100,7 @@ export default function Assets() {
         block_reason: formData.status === 'blocked' ? formData.block_reason : null,
         infoproduct_url: formData.type === 'infoproduct' ? formData.infoproduct_url : null,
         stripe_price_id: formData.stripe_price_id.trim() || null,
+        checkout_mode: formData.checkout_mode,
       };
 
       if (editingAsset) {
@@ -120,7 +122,7 @@ export default function Assets() {
 
       setIsDialogOpen(false);
       setEditingAsset(null);
-      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '' });
+      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '', checkout_mode: 'br' });
       fetchData();
     } catch (error: any) {
       toast({
@@ -143,6 +145,7 @@ export default function Assets() {
       block_reason: asset.block_reason || '',
       infoproduct_url: (asset as any).infoproduct_url || '',
       stripe_price_id: (asset as any).stripe_price_id || '',
+      checkout_mode: ((asset as any).checkout_mode === 'global' ? 'global' : 'br') as 'br' | 'global',
     });
     setIsDialogOpen(true);
   };
@@ -199,7 +202,7 @@ export default function Assets() {
             setIsDialogOpen(open);
             if (!open) {
               setEditingAsset(null);
-              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '' });
+              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '', checkout_mode: 'br' });
             }
           }}>
             <DialogTrigger asChild>
@@ -253,6 +256,21 @@ export default function Assets() {
                     <option value="custom">Custom</option>
                     <option value="other">Outro</option>
                   </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="checkout_mode">Modo do Checkout</Label>
+                  <select
+                    id="checkout_mode"
+                    value={formData.checkout_mode}
+                    onChange={(e) => setFormData({ ...formData, checkout_mode: e.target.value as 'br' | 'global' })}
+                    className="flex h-10 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground"
+                  >
+                    <option value="br">Brasil (PT-BR, R$, Pix / Cartão / Boleto)</option>
+                    <option value="global">Global (Inglês, US$, apenas Cartão)</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Define idioma, moeda e meios de pagamento exibidos no checkout deste ativo
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
@@ -368,6 +386,12 @@ export default function Assets() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tipo:</span>
                     <span className="text-foreground">{typeLabels[asset.type]}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Checkout:</span>
+                    <span className="text-foreground">
+                      {(asset as any).checkout_mode === 'global' ? 'Global (USD)' : 'Brasil (BRL)'}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Public Key:</span>

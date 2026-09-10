@@ -1,0 +1,2 @@
+ALTER TABLE public.assets ADD COLUMN IF NOT EXISTS checkout_mode TEXT NOT NULL DEFAULT 'br';
+ALTER TABLE public.assets ADD CONSTRAINT assets_checkout_mode_check CHECK (checkout_mode IN ('br','global'));
