@@ -107,6 +107,21 @@ export default function Subscriptions() {
     }
   }
 
+  async function fetchStripeSettings() {
+    try {
+      const { data, error } = await supabase
+        .from('stripe_settings')
+        .select('is_enabled, is_configured')
+        .maybeSingle();
+
+      if (error) throw error;
+      setStripeEnabled(!!data?.is_enabled);
+      setStripeConfigured(!!data?.is_configured);
+    } catch (error) {
+      console.error('Error fetching Stripe settings:', error);
+    }
+  }
+
   const filteredSubscriptions = subscriptions.filter(sub => {
     const searchLower = searchTerm.toLowerCase();
     return (
