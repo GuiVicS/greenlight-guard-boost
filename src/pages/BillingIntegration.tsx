@@ -199,7 +199,7 @@ export default function BillingIntegration() {
     }
   };
 
-  const whatsappConfigured = !!(settings.evolution_api_url && settings.evolution_instance);
+  const whatsappConfigured = !!(settings.evolution_api_url && settings.evolution_instance && (evolutionKeySaved || evolutionApiKey.trim()));
   const emailConfigured = !!(settings.sender_email && settings.sender_name);
 
   if (loading) {
