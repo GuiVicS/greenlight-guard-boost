@@ -196,7 +196,7 @@ export default function Assets() {
             setIsDialogOpen(open);
             if (!open) {
               setEditingAsset(null);
-              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '', checkout_mode: 'br' });
+              setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', checkout_mode: 'br' });
             }
           }}>
             <DialogTrigger asChild>
@@ -290,20 +290,6 @@ export default function Assets() {
                     />
                     <p className="text-xs text-muted-foreground">
                       Link para onde o cliente será redirecionado após o pagamento
-                    </p>
-                  </div>
-                )}
-                {stripeEnabled && (
-                  <div className="space-y-2">
-                    <Label htmlFor="stripe_price_id">Price ID (Stripe)</Label>
-                    <Input
-                      id="stripe_price_id"
-                      value={formData.stripe_price_id}
-                      onChange={(e) => setFormData({ ...formData, stripe_price_id: e.target.value })}
-                      placeholder="price_1AbC..."
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Identificador do preço no Stripe usado na cobrança deste ativo
                     </p>
                   </div>
                 )}
