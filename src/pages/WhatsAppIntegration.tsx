@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import whatsappLogo from '@/assets/whatsapp-logo.png';
+import { IntegrationWizard } from '@/components/integrations/IntegrationWizard';
 import {
   ArrowLeft,
   CheckCircle,
