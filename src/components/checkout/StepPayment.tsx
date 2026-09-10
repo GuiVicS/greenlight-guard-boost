@@ -46,7 +46,6 @@ interface StepPaymentProps {
   returnUrl?: string;
   paymentMethods: PaymentMethodConfig[];
   stripePriceId?: string | null;
-  onStartPayment?: () => void;
 }
 
 
