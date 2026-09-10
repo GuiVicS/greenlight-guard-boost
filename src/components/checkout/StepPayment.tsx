@@ -45,7 +45,9 @@ interface StepPaymentProps {
   returnUrl?: string;
   paymentMethods: PaymentMethodConfig[];
   stripePriceId?: string | null;
+  onStartPayment?: () => void;
 }
+
 
 export function StepPayment({
   subscription,
@@ -65,6 +67,7 @@ export function StepPayment({
   returnUrl,
   paymentMethods,
   stripePriceId,
+  onStartPayment,
 }: StepPaymentProps) {
   const country = subscription.country || 'BR';
   const t = getTranslations(country);
