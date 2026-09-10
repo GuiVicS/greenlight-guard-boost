@@ -3,13 +3,16 @@ import { Elements } from "@stripe/react-stripe-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, CreditCard, FileText, ArrowLeft, Wallet, QrCode } from "lucide-react";
+import { Loader2, CreditCard, FileText, ArrowLeft, Wallet, QrCode, ExternalLink } from "lucide-react";
+import { useState } from "react";
 import { CardPaymentForm } from "./CardPaymentForm";
 import { BoletoPaymentForm } from "./BoletoPaymentForm";
 import { PixPaymentForm } from "./PixPaymentForm";
 import { MercadoPagoCardForm } from "./MercadoPagoCardForm";
 import { MercadoPagoBoletoForm } from "./MercadoPagoBoletoForm";
 import { getTranslations } from "@/lib/checkout-utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface PaymentMethodConfig {
   method_name: string;
@@ -42,6 +45,7 @@ interface StepPaymentProps {
   showCard: boolean;
   returnUrl?: string;
   paymentMethods: PaymentMethodConfig[];
+  stripePriceId?: string | null;
 }
 
 export function StepPayment({
@@ -61,10 +65,13 @@ export function StepPayment({
   showCard,
   returnUrl,
   paymentMethods,
+  stripePriceId,
 }: StepPaymentProps) {
   const country = subscription.country || 'BR';
   const t = getTranslations(country);
   const locale = country === 'BR' ? 'pt-BR' : country === 'PT' ? 'pt' : country === 'ES' || country === 'MX' ? 'es' : 'en';
+  const { toast } = useToast();
+  const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState(false);
 
   // Determine which gateway to use for each payment method
   const getGatewayForMethod = (method: string): string => {
@@ -84,6 +91,45 @@ export function StepPayment({
     (paymentMethod === 'card' && cardGateway === 'stripe') ||
     (paymentMethod === 'boleto' && boletoGateway === 'stripe')
   );
+
+  // Use Stripe hosted checkout for subscriptions when a recurring price_id is set
+  const useStripeSubscriptionCheckout = paymentMethod === 'card' && cardGateway === 'stripe' && stripePriceId;
+
+  const handleStripeCheckout = async () => {
+    setStripeCheckoutLoading(true);
+    try {
+      const successUrl = returnUrl
+        ? `${window.location.origin}/checkout/${subscription.id}?return_url=${encodeURIComponent(returnUrl)}&success=1`
+        : `${window.location.origin}/checkout/${subscription.id}?success=1`;
+      const cancelUrl = `${window.location.origin}/checkout/${subscription.id}?canceled=1`;
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          subscriptionId: subscription.id,
+          paymentMethod: "card",
+          successUrl,
+          cancelUrl,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("Stripe checkout error:", err);
+      toast({
+        title: country === 'BR' ? 'Erro no checkout' : 'Checkout error',
+        description: err.message || "Não foi possível iniciar o checkout",
+        variant: "destructive",
+      });
+    } finally {
+      setStripeCheckoutLoading(false);
+    }
+  };
 
   return (
     <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
@@ -154,8 +200,30 @@ export function StepPayment({
 
           {/* Card Tab */}
           <TabsContent value="card" className="mt-0">
-            {cardGateway === 'stripe' ? (
-              // Stripe Card Payment
+            {useStripeSubscriptionCheckout ? (
+              // Stripe Subscription checkout: redirect to Stripe hosted page
+              <div className="text-center py-10 space-y-4">
+                <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
+                  {country === 'BR'
+                    ? 'Você será redirecionado para a página segura da Stripe para confirmar a assinatura mensal.'
+                    : 'You will be redirected to Stripe to confirm the monthly subscription.'}
+                </p>
+                <Button
+                  onClick={handleStripeCheckout}
+                  disabled={stripeCheckoutLoading}
+                  className="w-full"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {stripeCheckoutLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                  )}
+                  {country === 'BR' ? 'Pagar com Stripe' : 'Pay with Stripe'}
+                </Button>
+              </div>
+            ) : cardGateway === 'stripe' ? (
+              // Stripe Card Payment (one-time)
               <>
                 {creatingIntent ? (
                   <div className="flex items-center justify-center py-16">

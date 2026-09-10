@@ -30,6 +30,7 @@ interface OverdueSubscription {
   last_charge_attempt: string | null;
   auto_charge_enabled: boolean;
   stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   assets: {
     id: string;
     name: string;
@@ -103,6 +104,7 @@ Deno.serve(async (req) => {
         last_charge_attempt,
         auto_charge_enabled,
         stripe_customer_id,
+        stripe_subscription_id,
         assets!inner (
           id,
           name,
@@ -146,7 +148,8 @@ Deno.serve(async (req) => {
       const daysRemaining = settings.notification_days_before_block - notificationDays;
 
       // PHASE 1: Auto-charge attempts (if enabled)
-      if (settings.is_enabled && sub.auto_charge_enabled && failedCount < settings.max_auto_charge_attempts) {
+      // Skip local auto-charge when Stripe manages the subscription; webhooks update state.
+      if (!sub.stripe_subscription_id && settings.is_enabled && sub.auto_charge_enabled && failedCount < settings.max_auto_charge_attempts) {
         console.log(`Attempting auto-charge (attempt ${failedCount + 1}/${settings.max_auto_charge_attempts})`);
         
         try {
@@ -176,6 +179,11 @@ Deno.serve(async (req) => {
           console.error("Auto-charge error:", chargeErr);
           results.errors.push(`Sub ${sub.id} auto-charge: ${chargeErr.message}`);
         }
+      }
+
+      // For Stripe-managed subscriptions, only notifications/blocking logic continues if past due.
+      if (sub.stripe_subscription_id) {
+        console.log(`Subscription ${sub.id} is managed by Stripe (${sub.stripe_subscription_id}); skipping local charge phase.`);
       }
 
       // PHASE 2: Notification period (after max auto-charge attempts or auto-charge disabled)

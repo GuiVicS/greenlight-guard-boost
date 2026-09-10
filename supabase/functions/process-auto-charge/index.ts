@@ -48,6 +48,31 @@ Deno.serve(async (req) => {
     }
 
     const client = subscription.assets?.clients;
+
+    // When a Stripe Subscription exists, billing/retries are handled by Stripe natively.
+    // The local scheduler should not duplicate charges; webhooks update the local state.
+    if (subscription.stripe_subscription_id) {
+      console.log(`Subscription ${subscriptionId} has Stripe subscription ${subscription.stripe_subscription_id}; skipping local auto-charge.`);
+      await supabase.from("billing_attempts").insert({
+        subscription_id: subscriptionId,
+        attempt_type: "auto_charge",
+        attempt_number: attemptNumber,
+        status: "success",
+        sent_to: client?.email,
+        error_message: null,
+        metadata: { info: "Managed by Stripe subscription", stripe_subscription_id: subscription.stripe_subscription_id },
+      });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          managedByStripe: true,
+          subscriptionId,
+          message: "Billing is managed by Stripe subscription.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     let chargeSuccess = false;
     let chargeError: string | null = null;
     let paymentData: any = null;

@@ -57,12 +57,17 @@ export default function Subscriptions() {
     due_date: '',
     status: 'active' as 'active' | 'overdue' | 'cancelled',
     country: 'BR',
+    stripe_recurring: false,
   });
+  const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripeConfigured, setStripeConfigured] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSubscriptions();
     fetchAssets();
+    fetchStripeSettings();
   }, []);
 
   async function fetchSubscriptions() {
@@ -102,6 +107,21 @@ export default function Subscriptions() {
     }
   }
 
+  async function fetchStripeSettings() {
+    try {
+      const { data, error } = await supabase
+        .from('stripe_settings')
+        .select('is_enabled, is_configured')
+        .maybeSingle();
+
+      if (error) throw error;
+      setStripeEnabled(!!data?.is_enabled);
+      setStripeConfigured(!!data?.is_configured);
+    } catch (error) {
+      console.error('Error fetching Stripe settings:', error);
+    }
+  }
+
   const filteredSubscriptions = subscriptions.filter(sub => {
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -113,9 +133,35 @@ export default function Subscriptions() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setStripeLoading(true);
+
     try {
-      const subscriptionData = {
+      let stripePriceId: string | null = null;
+
+      // If Stripe recurring is enabled, create or reuse Stripe product/price
+      if (formData.stripe_recurring && stripeEnabled && stripeConfigured) {
+        const selectedAsset = assets.find(a => a.id === formData.asset_id);
+
+        if (selectedAsset?.stripe_price_id) {
+          stripePriceId = selectedAsset.stripe_price_id;
+        } else {
+          const { data, error } = await supabase.functions.invoke('create-stripe-recurring-price', {
+            body: {
+              assetId: formData.asset_id,
+              planName: formData.plan_name,
+              monthlyValue: parseFloat(formData.monthly_value),
+              country: formData.country,
+            },
+          });
+
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+
+          stripePriceId = data?.priceId || null;
+        }
+      }
+
+      const subscriptionData: any = {
         asset_id: formData.asset_id,
         plan_name: formData.plan_name,
         monthly_value: parseFloat(formData.monthly_value),
@@ -123,6 +169,10 @@ export default function Subscriptions() {
         status: formData.status,
         country: formData.country,
       };
+
+      if (stripePriceId) {
+        subscriptionData.stripe_price_id = stripePriceId;
+      }
 
       if (editingSubscription) {
         const { error } = await supabase
@@ -144,12 +194,15 @@ export default function Subscriptions() {
       setIsDialogOpen(false);
       resetForm();
       fetchSubscriptions();
+      fetchAssets();
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.message,
+        description: error.message || 'Falha ao salvar assinatura',
         variant: 'destructive',
       });
+    } finally {
+      setStripeLoading(false);
     }
   };
 
@@ -161,6 +214,7 @@ export default function Subscriptions() {
       due_date: '',
       status: 'active',
       country: 'BR',
+      stripe_recurring: false,
     });
     setEditingSubscription(null);
   };
@@ -174,6 +228,7 @@ export default function Subscriptions() {
       due_date: subscription.due_date,
       status: subscription.status,
       country: (subscription as any).country || 'BR',
+      stripe_recurring: !!(subscription as any).stripe_price_id,
     });
     setIsDialogOpen(true);
   };
@@ -423,6 +478,23 @@ export default function Subscriptions() {
                 </Select>
               </div>
 
+              {stripeEnabled && stripeConfigured && (
+                <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Cobrar recorrente pela Stripe</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Cria um produto/plano mensal na Stripe e vincula automaticamente o price_id.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.stripe_recurring}
+                    onChange={(e) => setFormData({ ...formData, stripe_recurring: e.target.checked })}
+                    className="h-5 w-5 accent-primary"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select
@@ -451,7 +523,8 @@ export default function Subscriptions() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" variant="glow" className="flex-1">
+                <Button type="submit" variant="glow" className="flex-1" disabled={stripeLoading}>
+                  {stripeLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                   {editingSubscription ? 'Salvar' : 'Criar'}
                 </Button>
               </div>
