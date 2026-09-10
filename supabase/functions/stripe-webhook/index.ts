@@ -450,6 +450,12 @@ Deno.serve(async (req) => {
             action: "subscription_canceled",
             details: { stripe_subscription_id: stripeSub.id },
           });
+
+          await dispatchWebhook(supabase, "subscription.canceled", {
+            subscription_id: dbSubscription.id,
+            stripe_subscription_id: stripeSub.id,
+            reason: stripeSub.cancellation_details?.reason || null,
+          });
         }
         break;
       }
