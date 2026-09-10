@@ -96,16 +96,17 @@ export default function Integrations() {
 
   async function checkIntegrations() {
     try {
-      const [stripeRes, mpRes, billingRes] = await Promise.all([
+      const [stripeRes, mpRes, billingRes, evoRes] = await Promise.all([
         supabase.from('stripe_settings').select('is_configured').maybeSingle(),
         supabase.from('mercadopago_settings').select('is_configured').maybeSingle(),
         supabase.from('billing_settings').select('is_enabled, evolution_api_url, sender_email').maybeSingle(),
+        supabase.from('evolution_settings').select('connection_state, is_configured').maybeSingle(),
       ]);
 
       setConfiguredIntegrations({
         stripe: stripeRes.data?.is_configured || false,
         mercadopago: mpRes.data?.is_configured || false,
-        whatsapp: !!(billingRes.data?.evolution_api_url),
+        whatsapp: evoRes.data?.connection_state === 'open' || !!billingRes.data?.evolution_api_url,
         email: !!(billingRes.data?.sender_email),
       });
     } catch (error) {
