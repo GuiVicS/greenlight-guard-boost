@@ -196,30 +196,8 @@ export function StepPayment({
 
           {/* Card Tab */}
           <TabsContent value="card" className="mt-0">
-            {useStripeSubscriptionCheckout ? (
-              // Stripe Subscription checkout: redirect to Stripe hosted page
-              <div className="text-center py-10 space-y-4">
-                <p className={`text-sm ${isDarkTheme ? 'text-slate-400' : 'text-muted-foreground'}`}>
-                  {country === 'BR'
-                    ? 'Você será redirecionado para a página segura da Stripe para confirmar a assinatura mensal.'
-                    : 'You will be redirected to Stripe to confirm the monthly subscription.'}
-                </p>
-                <Button
-                  onClick={handleStripeCheckout}
-                  disabled={stripeCheckoutLoading}
-                  className="w-full"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  {stripeCheckoutLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                  )}
-                  {country === 'BR' ? 'Pagar com Stripe' : 'Pay with Stripe'}
-                </Button>
-              </div>
-            ) : cardGateway === 'stripe' ? (
-              // Stripe Card Payment (one-time)
+            {cardGateway === 'stripe' ? (
+              // Pagamento com cartão no próprio checkout (transparente)
               <>
                 {creatingIntent ? (
                   <div className="flex items-center justify-center py-16">
