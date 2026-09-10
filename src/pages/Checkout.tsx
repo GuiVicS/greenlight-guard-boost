@@ -21,6 +21,7 @@ interface SubscriptionData {
     id: string;
     name: string;
     type: string;
+    checkout_mode: string | null;
     stripe_price_id: string | null;
     infoproduct_url: string | null;
     checkout_logo_url: string | null;
@@ -102,6 +103,7 @@ export default function Checkout() {
             id,
             name,
             type,
+            checkout_mode,
             stripe_price_id,
             infoproduct_url,
             checkout_logo_url,
@@ -315,7 +317,8 @@ export default function Checkout() {
     );
   }
 
-  const country = subscription?.country || 'BR';
+  const isGlobalCheckout = subscription?.asset?.checkout_mode === 'global';
+  const country = isGlobalCheckout ? 'US' : (subscription?.country || 'BR');
   const t = getTranslations(country);
 
   // Tela de erro ao carregar dados
