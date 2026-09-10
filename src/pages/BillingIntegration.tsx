@@ -157,6 +157,38 @@ export default function BillingIntegration() {
         if (error) throw error;
       }
 
+      // Sincroniza credenciais da Evolution com evolution_settings (usado pelas funções de envio)
+      if (settings.evolution_api_url || evolutionApiKey || settings.evolution_instance) {
+        const { data: existingEvo } = await supabase
+          .from('evolution_settings')
+          .select('id')
+          .maybeSingle();
+
+        const evoData: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+        };
+        if (settings.evolution_api_url) evoData.server_url = settings.evolution_api_url.replace(/\/$/, '');
+        if (settings.evolution_instance) evoData.instance_name = settings.evolution_instance;
+        if (evolutionApiKey.trim()) evoData.global_api_key = evolutionApiKey.trim();
+
+        if (existingEvo?.id) {
+          const { error } = await supabase
+            .from('evolution_settings')
+            .update(evoData)
+            .eq('id', existingEvo.id);
+          if (error) throw error;
+        } else {
+          if (!evolutionApiKey.trim()) {
+            throw new Error('Informe a API Key Global da Evolution para concluir a configuração.');
+          }
+          const { error } = await supabase
+            .from('evolution_settings')
+            .insert({ ...evoData, created_at: new Date().toISOString() });
+          if (error) throw error;
+        }
+        setEvolutionApiKey('');
+      }
+
       toast({ title: 'Configurações salvas com sucesso!' });
       fetchSettings();
     } catch (error: unknown) {
