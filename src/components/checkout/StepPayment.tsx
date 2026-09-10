@@ -65,10 +65,13 @@ export function StepPayment({
   showCard,
   returnUrl,
   paymentMethods,
+  stripePriceId,
 }: StepPaymentProps) {
   const country = subscription.country || 'BR';
   const t = getTranslations(country);
   const locale = country === 'BR' ? 'pt-BR' : country === 'PT' ? 'pt' : country === 'ES' || country === 'MX' ? 'es' : 'en';
+  const { toast } = useToast();
+  const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState(false);
 
   // Determine which gateway to use for each payment method
   const getGatewayForMethod = (method: string): string => {
