@@ -21,6 +21,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IntegrationWizard } from '@/components/integrations/IntegrationWizard';
 
 interface StripeSettings {
   id?: string;
@@ -320,6 +321,44 @@ export default function PaymentGatewaysSettings() {
 
           {/* STRIPE TAB */}
           <TabsContent value="stripe" className="space-y-6">
+            <IntegrationWizard
+              title="Assistente de configuração — Stripe (produção)"
+              steps={[
+                {
+                  title: 'Ative o modo produção',
+                  description: 'Desligue a chave "Sandbox" abaixo. Com Sandbox desligado, o sistema usa as credenciais reais (pk_live_ / sk_live_) e cobra de verdade.',
+                  done: !stripeSettings.is_sandbox,
+                },
+                {
+                  title: 'Copie as chaves da sua conta Stripe',
+                  description: 'No painel da Stripe, com o modo de teste desativado, copie a Publishable Key (pk_live_...) e a Secret Key (sk_live_...).',
+                  done: Boolean(stripeSettings.publishable_key) && Boolean(stripeSettings.secret_key_encrypted),
+                  link: { label: 'Abrir chaves da Stripe', url: 'https://dashboard.stripe.com/apikeys' },
+                },
+                {
+                  title: 'Cole as chaves e salve',
+                  description: 'Preencha Publishable Key e Secret Key no formulário abaixo e clique em "Salvar Stripe".',
+                  done: Boolean(stripeSettings.publishable_key) && Boolean(stripeSettings.secret_key_encrypted),
+                },
+                {
+                  title: 'Crie o webhook na Stripe',
+                  description: 'Adicione um endpoint com a URL abaixo e os eventos invoice.paid, invoice.payment_failed, checkout.session.completed e customer.subscription.deleted.',
+                  done: Boolean(stripeSettings.webhook_secret_encrypted),
+                  code: 'https://hthupflasjifsweetqhx.supabase.co/functions/v1/stripe-webhook',
+                  link: { label: 'Criar webhook na Stripe', url: 'https://dashboard.stripe.com/webhooks' },
+                },
+                {
+                  title: 'Salve o Webhook Secret',
+                  description: 'Copie o "Signing secret" (whsec_...) gerado pela Stripe e cole no campo Webhook Secret abaixo.',
+                  done: Boolean(stripeSettings.webhook_secret_encrypted),
+                },
+                {
+                  title: 'Ative a Stripe e os métodos',
+                  description: 'Ligue a chave de ativação no topo e habilite Cartão e Boleto na seção "Métodos de Pagamento".',
+                  done: stripeSettings.is_enabled && paymentMethods.some(m => m.gateway_type === 'stripe' && m.is_enabled),
+                },
+              ]}
+            />
             {/* Status Card */}
             <div className={cn(
               "glass-card p-6 flex items-center gap-4",
@@ -479,6 +518,38 @@ export default function PaymentGatewaysSettings() {
 
           {/* MERCADO PAGO TAB */}
           <TabsContent value="mercadopago" className="space-y-6">
+            <IntegrationWizard
+              title="Assistente de configuração — Mercado Pago (Pix)"
+              steps={[
+                {
+                  title: 'Ative o modo produção',
+                  description: 'Desligue a chave "Sandbox" abaixo. Pix de sandbox não é reconhecido pelos bancos reais.',
+                  done: !mpSettings.is_sandbox,
+                },
+                {
+                  title: 'Copie suas credenciais de produção',
+                  description: 'No painel de desenvolvedores do Mercado Pago, copie o Access Token (APP_USR-...) e a Public Key de produção.',
+                  done: Boolean(mpSettings.access_token_encrypted) && Boolean(mpSettings.public_key),
+                  link: { label: 'Abrir credenciais do Mercado Pago', url: 'https://www.mercadopago.com.br/developers/panel/app' },
+                },
+                {
+                  title: 'Cole as credenciais e salve',
+                  description: 'Preencha Access Token e Public Key no formulário abaixo e clique em salvar.',
+                  done: mpSettings.is_configured,
+                },
+                {
+                  title: 'Configure a notificação (webhook)',
+                  description: 'No painel do Mercado Pago, cadastre a URL abaixo para receber a confirmação automática dos pagamentos Pix.',
+                  done: Boolean(mpSettings.webhook_secret_encrypted),
+                  code: 'https://hthupflasjifsweetqhx.supabase.co/functions/v1/mercadopago-webhook',
+                },
+                {
+                  title: 'Ative o Mercado Pago',
+                  description: 'Ligue a chave de ativação no topo para liberar o Pix no checkout.',
+                  done: mpSettings.is_enabled,
+                },
+              ]}
+            />
             {/* Status Card */}
             <div className={cn(
               "glass-card p-6 flex items-center gap-4",

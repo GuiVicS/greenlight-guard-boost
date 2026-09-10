@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { IntegrationWizard } from '@/components/integrations/IntegrationWizard';
 
 interface BillingSettings {
   id?: string;
@@ -231,6 +232,37 @@ export default function BillingIntegration() {
             </p>
           </div>
         </div>
+
+        <IntegrationWizard
+          title="Assistente de configuração — Cobrança automática"
+          steps={[
+            {
+              title: 'Defina o remetente dos e-mails',
+              description: 'Preencha o e-mail e o nome que aparecerão como remetente das cobranças na aba Email.',
+              done: Boolean(settings.sender_email),
+            },
+            {
+              title: 'Informe o servidor do WhatsApp',
+              description: 'Na aba WhatsApp, preencha a URL do servidor e o nome da instância.',
+              done: Boolean(settings.evolution_api_url) && Boolean(settings.evolution_instance),
+            },
+            {
+              title: 'Salve a API Key global',
+              description: 'Cole a chave de acesso do servidor de WhatsApp no campo API Key Global. Sem ela nenhuma mensagem é enviada.',
+              done: evolutionKeySaved,
+            },
+            {
+              title: 'Revise as mensagens',
+              description: 'Confira os textos de e-mail e WhatsApp e as variáveis como {{client_name}} e {{payment_link}}.',
+              done: Boolean(settings.email_message_template) && Boolean(settings.whatsapp_message_template),
+            },
+            {
+              title: 'Ative a cobrança automática',
+              description: 'Ligue a chave no card de status acima e clique em salvar.',
+              done: settings.is_enabled,
+            },
+          ]}
+        />
 
         {/* Status Geral */}
         <div className={cn(

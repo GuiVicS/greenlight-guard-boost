@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import whatsappLogo from '@/assets/whatsapp-logo.png';
+import { IntegrationWizard } from '@/components/integrations/IntegrationWizard';
 import {
   ArrowLeft,
   CheckCircle,
@@ -286,6 +287,32 @@ export default function WhatsAppIntegration() {
           </div>
           <Badge variant={state === 'open' ? 'default' : 'secondary'}>{statusLabel}</Badge>
         </div>
+
+        <IntegrationWizard
+          title="Assistente de configuração — WhatsApp"
+          steps={[
+            {
+              title: 'Informe o servidor da Evolution API',
+              description: 'Cole a URL do seu servidor (ex.: https://api.seudominio.com) no campo abaixo.',
+              done: Boolean(settings?.serverUrl),
+            },
+            {
+              title: 'Cole a API Key global e salve',
+              description: 'A chave de acesso do servidor é obrigatória para criar a instância e enviar mensagens.',
+              done: Boolean(settings?.hasCredentials),
+            },
+            {
+              title: 'Crie a instância',
+              description: 'Depois de salvar as credenciais, clique em conectar para criar a instância do seu número.',
+              done: Boolean(settings?.instanceName),
+            },
+            {
+              title: 'Leia o QR Code no celular',
+              description: 'Abra o WhatsApp > Aparelhos conectados > Conectar aparelho e aponte para o QR Code exibido aqui.',
+              done: state === 'open',
+            },
+          ]}
+        />
 
         {/* Credenciais */}
         <div className="glass-card p-6 space-y-6">
