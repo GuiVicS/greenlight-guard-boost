@@ -504,10 +504,10 @@ export default function Checkout() {
         <CheckoutTimeline currentStep={currentStep} primaryColor={primaryColor} isDarkTheme={isDarkTheme} />
       </div>
 
-      <div className="container max-w-6xl mx-auto p-4 pb-8">
-        <div className="grid lg:grid-cols-5 gap-8">
-          {/* Left Column - Forms */}
-          <div className="lg:col-span-3">
+      <div className="container max-w-3xl mx-auto p-4 pb-8">
+        <div className="flex flex-col items-center">
+          {/* Forms */}
+          <div className="w-full">
             {currentStep === 1 && (
               <StepIdentification
                 customerData={customerData}
@@ -543,19 +543,16 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* Right Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {subscription.asset.checkout_message && (
-              <Card className={`shadow-lg border-0 ${isDarkTheme ? 'bg-slate-800/90' : 'bg-white'}`}>
-                <CardContent className="pt-6">
-                  <p className={`text-sm text-center italic ${isDarkTheme ? 'text-slate-400' : 'text-slate-500'}`}>
-                    "{subscription.asset.checkout_message}"
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
+          {/* Optional message */}
+          {subscription.asset.checkout_message && (
+            <Card className={`mt-6 w-full shadow-lg border-0 ${isDarkTheme ? 'bg-slate-800/90' : 'bg-white'}`}>
+              <CardContent className="pt-6">
+                <p className={`text-sm text-center italic ${isDarkTheme ? 'text-slate-400' : 'text-slate-500'}`}>
+                  "{subscription.asset.checkout_message}"
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
