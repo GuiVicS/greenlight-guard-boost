@@ -97,10 +97,12 @@ export default function Checkout() {
           plan_name,
           monthly_value,
           country,
+          stripe_price_id,
           asset:assets!inner (
             id,
             name,
             type,
+            stripe_price_id,
             infoproduct_url,
             checkout_logo_url,
             checkout_message,
