@@ -214,6 +214,7 @@ export default function Subscriptions() {
       due_date: '',
       status: 'active',
       country: 'BR',
+      stripe_recurring: false,
     });
     setEditingSubscription(null);
   };
