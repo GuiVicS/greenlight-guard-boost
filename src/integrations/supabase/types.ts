@@ -269,6 +269,51 @@ export type Database = {
         }
         Relationships: []
       }
+      evolution_settings: {
+        Row: {
+          connected_number: string | null
+          connection_state: string
+          created_at: string
+          global_api_key: string | null
+          id: string
+          instance_id: string | null
+          instance_name: string | null
+          instance_token: string | null
+          is_configured: boolean
+          profile_name: string | null
+          server_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          connected_number?: string | null
+          connection_state?: string
+          created_at?: string
+          global_api_key?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          instance_token?: string | null
+          is_configured?: boolean
+          profile_name?: string | null
+          server_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          connected_number?: string | null
+          connection_state?: string
+          created_at?: string
+          global_api_key?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name?: string | null
+          instance_token?: string | null
+          is_configured?: boolean
+          profile_name?: string | null
+          server_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mercadopago_settings: {
         Row: {
           access_token_encrypted: string | null
