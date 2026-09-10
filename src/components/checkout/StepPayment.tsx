@@ -45,6 +45,7 @@ interface StepPaymentProps {
   showCard: boolean;
   returnUrl?: string;
   paymentMethods: PaymentMethodConfig[];
+  stripePriceId?: string | null;
 }
 
 export function StepPayment({
