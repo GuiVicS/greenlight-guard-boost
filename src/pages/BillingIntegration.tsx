@@ -70,6 +70,7 @@ export default function BillingIntegration() {
   const [saving, setSaving] = useState(false);
   const [showEvolutionKey, setShowEvolutionKey] = useState(false);
   const [evolutionApiKey, setEvolutionApiKey] = useState('');
+  const [evolutionKeySaved, setEvolutionKeySaved] = useState(false);
 
   const [settings, setSettings] = useState<BillingSettings>({
     is_enabled: false,
@@ -113,6 +114,12 @@ export default function BillingIntegration() {
           notification_days_before_block: data.notification_days_before_block || 2,
         });
       }
+
+      const { data: evo } = await supabase
+        .from('evolution_settings')
+        .select('global_api_key')
+        .maybeSingle();
+      setEvolutionKeySaved(!!evo?.global_api_key);
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
@@ -150,6 +157,38 @@ export default function BillingIntegration() {
         if (error) throw error;
       }
 
+      // Sincroniza credenciais da Evolution com evolution_settings (usado pelas funções de envio)
+      if (settings.evolution_api_url || evolutionApiKey || settings.evolution_instance) {
+        const { data: existingEvo } = await supabase
+          .from('evolution_settings')
+          .select('id')
+          .maybeSingle();
+
+        const evoData: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+        };
+        if (settings.evolution_api_url) evoData.server_url = settings.evolution_api_url.replace(/\/$/, '');
+        if (settings.evolution_instance) evoData.instance_name = settings.evolution_instance;
+        if (evolutionApiKey.trim()) evoData.global_api_key = evolutionApiKey.trim();
+
+        if (existingEvo?.id) {
+          const { error } = await supabase
+            .from('evolution_settings')
+            .update(evoData)
+            .eq('id', existingEvo.id);
+          if (error) throw error;
+        } else {
+          if (!evolutionApiKey.trim()) {
+            throw new Error('Informe a API Key Global da Evolution para concluir a configuração.');
+          }
+          const { error } = await supabase
+            .from('evolution_settings')
+            .insert({ ...evoData, created_at: new Date().toISOString() });
+          if (error) throw error;
+        }
+        setEvolutionApiKey('');
+      }
+
       toast({ title: 'Configurações salvas com sucesso!' });
       fetchSettings();
     } catch (error: unknown) {
@@ -160,7 +199,7 @@ export default function BillingIntegration() {
     }
   };
 
-  const whatsappConfigured = !!(settings.evolution_api_url && settings.evolution_instance);
+  const whatsappConfigured = !!(settings.evolution_api_url && settings.evolution_instance && (evolutionKeySaved || evolutionApiKey.trim()));
   const emailConfigured = !!(settings.sender_email && settings.sender_name);
 
   if (loading) {
@@ -304,6 +343,33 @@ export default function BillingIntegration() {
                     onChange={(e) => setSettings(prev => ({ ...prev, evolution_instance: e.target.value }))}
                     placeholder="nome-da-instancia"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>API Key Global</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type={showEvolutionKey ? 'text' : 'password'}
+                      value={evolutionApiKey}
+                      onChange={(e) => setEvolutionApiKey(e.target.value)}
+                      placeholder={evolutionKeySaved ? '•••••••••••• (salva)' : 'Sua API Key global da Evolution'}
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEvolutionKey(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={showEvolutionKey ? 'Ocultar chave' : 'Mostrar chave'}
+                    >
+                      {showEvolutionKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {evolutionKeySaved
+                      ? 'Chave já salva. Preencha apenas se quiser substituí-la.'
+                      : 'Obrigatória para enviar mensagens. Fica guardada no servidor e nunca é exibida novamente.'}
+                  </p>
                 </div>
 
                 <div className="space-y-2">
