@@ -478,6 +478,23 @@ export default function Subscriptions() {
                 </Select>
               </div>
 
+              {stripeEnabled && stripeConfigured && (
+                <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Cobrar recorrente pela Stripe</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Cria um produto/plano mensal na Stripe e vincula automaticamente o price_id.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.stripe_recurring}
+                    onChange={(e) => setFormData({ ...formData, stripe_recurring: e.target.checked })}
+                    className="h-5 w-5 accent-primary"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select
