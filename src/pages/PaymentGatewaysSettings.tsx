@@ -21,6 +21,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IntegrationWizard } from '@/components/integrations/IntegrationWizard';
 
 interface StripeSettings {
   id?: string;
