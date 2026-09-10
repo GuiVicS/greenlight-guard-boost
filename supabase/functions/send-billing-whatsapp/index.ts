@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // Process message template
-    let messageTemplate = settings.whatsapp_message_template || `Olá {{client_name}}! 👋
+    let messageTemplate = settings?.whatsapp_message_template || `Olá {{client_name}}! 👋
 
 Seu pagamento de R$ {{amount}} do plano {{plan_name}} está pendente desde {{due_date}}.
 
