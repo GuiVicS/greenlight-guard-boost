@@ -320,6 +320,44 @@ export default function PaymentGatewaysSettings() {
 
           {/* STRIPE TAB */}
           <TabsContent value="stripe" className="space-y-6">
+            <IntegrationWizard
+              title="Assistente de configuração — Stripe (produção)"
+              steps={[
+                {
+                  title: 'Ative o modo produção',
+                  description: 'Desligue a chave "Sandbox" abaixo. Com Sandbox desligado, o sistema usa as credenciais reais (pk_live_ / sk_live_) e cobra de verdade.',
+                  done: !stripeSettings.is_sandbox,
+                },
+                {
+                  title: 'Copie as chaves da sua conta Stripe',
+                  description: 'No painel da Stripe, com o modo de teste desativado, copie a Publishable Key (pk_live_...) e a Secret Key (sk_live_...).',
+                  done: Boolean(stripeSettings.publishable_key) && Boolean(stripeSettings.secret_key_encrypted),
+                  link: { label: 'Abrir chaves da Stripe', url: 'https://dashboard.stripe.com/apikeys' },
+                },
+                {
+                  title: 'Cole as chaves e salve',
+                  description: 'Preencha Publishable Key e Secret Key no formulário abaixo e clique em "Salvar Stripe".',
+                  done: Boolean(stripeSettings.publishable_key) && Boolean(stripeSettings.secret_key_encrypted),
+                },
+                {
+                  title: 'Crie o webhook na Stripe',
+                  description: 'Adicione um endpoint com a URL abaixo e os eventos invoice.paid, invoice.payment_failed, checkout.session.completed e customer.subscription.deleted.',
+                  done: Boolean(stripeSettings.webhook_secret_encrypted),
+                  code: 'https://hthupflasjifsweetqhx.supabase.co/functions/v1/stripe-webhook',
+                  link: { label: 'Criar webhook na Stripe', url: 'https://dashboard.stripe.com/webhooks' },
+                },
+                {
+                  title: 'Salve o Webhook Secret',
+                  description: 'Copie o "Signing secret" (whsec_...) gerado pela Stripe e cole no campo Webhook Secret abaixo.',
+                  done: Boolean(stripeSettings.webhook_secret_encrypted),
+                },
+                {
+                  title: 'Ative a Stripe e os métodos',
+                  description: 'Ligue a chave de ativação no topo e habilite Cartão e Boleto na seção "Métodos de Pagamento".',
+                  done: stripeSettings.is_enabled && paymentMethods.some(m => m.gateway_type === 'stripe' && m.is_enabled),
+                },
+              ]}
+            />
             {/* Status Card */}
             <div className={cn(
               "glass-card p-6 flex items-center gap-4",
