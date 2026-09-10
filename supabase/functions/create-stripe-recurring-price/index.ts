@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     if (!assetId || !planName || !monthlyValue) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: assetId, planName, monthlyValue" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     if (settingsError || !stripeSettings?.secret_key_encrypted) {
       return new Response(
         JSON.stringify({ error: "Stripe not configured" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       console.error("Stripe product error:", product.error);
       return new Response(
         JSON.stringify({ error: product.error.message }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       console.error("Stripe price error:", price.error);
       return new Response(
         JSON.stringify({ error: price.error.message }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
