@@ -70,6 +70,7 @@ export default function BillingIntegration() {
   const [saving, setSaving] = useState(false);
   const [showEvolutionKey, setShowEvolutionKey] = useState(false);
   const [evolutionApiKey, setEvolutionApiKey] = useState('');
+  const [evolutionKeySaved, setEvolutionKeySaved] = useState(false);
 
   const [settings, setSettings] = useState<BillingSettings>({
     is_enabled: false,
@@ -113,6 +114,12 @@ export default function BillingIntegration() {
           notification_days_before_block: data.notification_days_before_block || 2,
         });
       }
+
+      const { data: evo } = await supabase
+        .from('evolution_settings')
+        .select('global_api_key')
+        .maybeSingle();
+      setEvolutionKeySaved(!!evo?.global_api_key);
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
