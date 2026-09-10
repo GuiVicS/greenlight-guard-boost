@@ -92,7 +92,7 @@ Qualquer dúvida, estamos à disposição!`;
     const formattedPhone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
 
     // Send via Evolution API
-    const evolutionUrl = `${settings.evolution_api_url}/message/sendText/${settings.evolution_instance}`;
+    const evolutionUrl = `${baseUrl}/message/sendText/${instanceName}`;
     
     const evolutionResponse = await fetch(evolutionUrl, {
       method: "POST",
