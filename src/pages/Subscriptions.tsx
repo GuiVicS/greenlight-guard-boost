@@ -523,7 +523,8 @@ export default function Subscriptions() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" variant="glow" className="flex-1">
+                <Button type="submit" variant="glow" className="flex-1" disabled={stripeLoading}>
+                  {stripeLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                   {editingSubscription ? 'Salvar' : 'Criar'}
                 </Button>
               </div>
