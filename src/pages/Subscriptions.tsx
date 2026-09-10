@@ -133,9 +133,35 @@ export default function Subscriptions() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setStripeLoading(true);
+
     try {
-      const subscriptionData = {
+      let stripePriceId: string | null = null;
+
+      // If Stripe recurring is enabled, create or reuse Stripe product/price
+      if (formData.stripe_recurring && stripeEnabled && stripeConfigured) {
+        const selectedAsset = assets.find(a => a.id === formData.asset_id);
+
+        if (selectedAsset?.stripe_price_id) {
+          stripePriceId = selectedAsset.stripe_price_id;
+        } else {
+          const { data, error } = await supabase.functions.invoke('create-stripe-recurring-price', {
+            body: {
+              assetId: formData.asset_id,
+              planName: formData.plan_name,
+              monthlyValue: parseFloat(formData.monthly_value),
+              country: formData.country,
+            },
+          });
+
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+
+          stripePriceId = data?.priceId || null;
+        }
+      }
+
+      const subscriptionData: any = {
         asset_id: formData.asset_id,
         plan_name: formData.plan_name,
         monthly_value: parseFloat(formData.monthly_value),
@@ -143,6 +169,10 @@ export default function Subscriptions() {
         status: formData.status,
         country: formData.country,
       };
+
+      if (stripePriceId) {
+        subscriptionData.stripe_price_id = stripePriceId;
+      }
 
       if (editingSubscription) {
         const { error } = await supabase
@@ -164,12 +194,15 @@ export default function Subscriptions() {
       setIsDialogOpen(false);
       resetForm();
       fetchSubscriptions();
+      fetchAssets();
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: error.message,
+        description: error.message || 'Falha ao salvar assinatura',
         variant: 'destructive',
       });
+    } finally {
+      setStripeLoading(false);
     }
   };
 
