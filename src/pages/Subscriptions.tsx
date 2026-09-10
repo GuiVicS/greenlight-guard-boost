@@ -57,7 +57,7 @@ export default function Subscriptions() {
     due_date: '',
     status: 'active' as 'active' | 'overdue' | 'cancelled',
     country: 'BR',
-    stripe_recurring: false,
+    stripe_recurring: true,
   });
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [stripeConfigured, setStripeConfigured] = useState(false);
@@ -214,7 +214,7 @@ export default function Subscriptions() {
       due_date: '',
       status: 'active',
       country: 'BR',
-      stripe_recurring: false,
+      stripe_recurring: true,
     });
     setEditingSubscription(null);
   };

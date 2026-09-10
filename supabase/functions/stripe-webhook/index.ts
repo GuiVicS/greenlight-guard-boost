@@ -418,6 +418,21 @@ Deno.serve(async (req) => {
             blocked: shouldBlock,
           },
         });
+
+        // Notify the client on WhatsApp about the failed payment
+        try {
+          await supabase.functions.invoke("send-payment-failed-whatsapp", {
+            body: {
+              subscriptionId: subscription.id,
+              invoiceId: invoice.id,
+              attemptCount,
+              blocked: shouldBlock,
+              hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
+            },
+          });
+        } catch (e) {
+          console.error("[stripe-webhook] WhatsApp notification failed:", e);
+        }
         break;
       }
 
