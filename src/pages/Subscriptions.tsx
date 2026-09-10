@@ -67,6 +67,7 @@ export default function Subscriptions() {
   useEffect(() => {
     fetchSubscriptions();
     fetchAssets();
+    fetchStripeSettings();
   }, []);
 
   async function fetchSubscriptions() {
