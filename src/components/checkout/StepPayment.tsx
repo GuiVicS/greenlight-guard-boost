@@ -92,6 +92,45 @@ export function StepPayment({
     (paymentMethod === 'boleto' && boletoGateway === 'stripe')
   );
 
+  // Use Stripe hosted checkout for subscriptions when a recurring price_id is set
+  const useStripeSubscriptionCheckout = paymentMethod === 'card' && cardGateway === 'stripe' && stripePriceId;
+
+  const handleStripeCheckout = async () => {
+    setStripeCheckoutLoading(true);
+    try {
+      const successUrl = returnUrl
+        ? `${window.location.origin}/checkout/${subscription.id}?return_url=${encodeURIComponent(returnUrl)}&success=1`
+        : `${window.location.origin}/checkout/${subscription.id}?success=1`;
+      const cancelUrl = `${window.location.origin}/checkout/${subscription.id}?canceled=1`;
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          subscriptionId: subscription.id,
+          paymentMethod: "card",
+          successUrl,
+          cancelUrl,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("Stripe checkout error:", err);
+      toast({
+        title: country === 'BR' ? 'Erro no checkout' : 'Checkout error',
+        description: err.message || "Não foi possível iniciar o checkout",
+        variant: "destructive",
+      });
+    } finally {
+      setStripeCheckoutLoading(false);
+    }
+  };
+
   return (
     <Card className={`shadow-lg border-0 overflow-hidden ${isDarkTheme ? 'bg-slate-800/90' : ''}`}>
       <CardHeader className={`pb-4 ${isDarkTheme 
