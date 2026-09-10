@@ -30,11 +30,11 @@ const integrations: IntegrationCard[] = [
   {
     id: 'whatsapp',
     name: 'WhatsApp',
-    description: 'Envie cobranças e notificações via WhatsApp com Evolution API',
+    description: 'Conecte seu número via Evolution API e envie cobranças por WhatsApp',
     logoUrl: whatsappLogo,
     iconColor: 'text-[#25D366]',
     iconBg: 'bg-[#25D366]/20',
-    path: '/integrations/billing',
+    path: '/integrations/whatsapp',
     category: 'communication',
   },
   {
