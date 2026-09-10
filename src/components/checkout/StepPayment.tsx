@@ -87,8 +87,9 @@ export function StepPayment({
     (paymentMethod === 'boleto' && boletoGateway === 'stripe')
   );
 
-  // Use Stripe hosted checkout for subscriptions when a recurring price_id is set
-  const useStripeSubscriptionCheckout = paymentMethod === 'card' && cardGateway === 'stripe' && stripePriceId;
+  // Assinatura recorrente é cobrada de forma transparente no próprio checkout
+  const isRecurring = paymentMethod === 'card' && cardGateway === 'stripe' && !!stripePriceId;
+
 
   const handleStripeCheckout = async () => {
     setStripeCheckoutLoading(true);

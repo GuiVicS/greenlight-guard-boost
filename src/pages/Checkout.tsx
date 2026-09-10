@@ -267,8 +267,7 @@ export default function Checkout() {
 
   const handlePaymentMethodChange = (method: "card" | "boleto" | "pix") => {
     setPaymentMethod(method);
-    // Only create Stripe payment intent if the method uses Stripe and is not a subscription checkout
-    if (method !== "pix" && methodUsesStripe(method) && !shouldUseStripeSubscriptionCheckout(method)) {
+    if (method !== "pix" && methodUsesStripe(method)) {
       createPaymentIntent(method);
     }
   };
