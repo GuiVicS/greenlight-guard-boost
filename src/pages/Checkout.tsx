@@ -199,12 +199,25 @@ export default function Checkout() {
     return config?.gateway_type === 'stripe';
   };
 
+  // Stripe subscription checkout uses a hosted Checkout Session when a recurring price_id is linked.
+  const shouldUseStripeSubscriptionCheckout = (method: string): boolean => {
+    if (method !== 'card') return false;
+    const priceId = subscription?.asset.stripe_price_id || subscription?.stripe_price_id;
+    return methodUsesStripe(method) && !!priceId;
+  };
+
   const createPaymentIntent = async (method: "card" | "boleto") => {
     if (!subscription) return;
 
     // Only create Stripe payment intent if the method uses Stripe
     if (!methodUsesStripe(method)) {
       console.log(`Method ${method} uses Mercado Pago, skipping Stripe payment intent`);
+      return;
+    }
+
+    // For Stripe subscriptions, use hosted checkout instead of embedded Elements
+    if (shouldUseStripeSubscriptionCheckout(method)) {
+      console.log(`Subscription has Stripe price_id; skipping PaymentIntent, will use Checkout Session`);
       return;
     }
 
@@ -244,16 +257,16 @@ export default function Checkout() {
 
   const handleGoToPayment = () => {
     setCurrentStep(2);
-    // Only create Stripe payment intent if the method uses Stripe
-    if (subscription && !clientSecret && paymentMethod !== "pix" && methodUsesStripe(paymentMethod)) {
+    // Only create Stripe payment intent if the method uses Stripe and is not a subscription checkout
+    if (subscription && !clientSecret && paymentMethod !== "pix" && methodUsesStripe(paymentMethod) && !shouldUseStripeSubscriptionCheckout(paymentMethod)) {
       createPaymentIntent(paymentMethod as "card" | "boleto");
     }
   };
 
   const handlePaymentMethodChange = (method: "card" | "boleto" | "pix") => {
     setPaymentMethod(method);
-    // Only create Stripe payment intent if the method uses Stripe
-    if (method !== "pix" && methodUsesStripe(method)) {
+    // Only create Stripe payment intent if the method uses Stripe and is not a subscription checkout
+    if (method !== "pix" && methodUsesStripe(method) && !shouldUseStripeSubscriptionCheckout(method)) {
       createPaymentIntent(method);
     }
   };
