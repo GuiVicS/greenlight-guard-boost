@@ -83,18 +83,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    // For now, we'll use Stripe's hosted checkout
-    // In production, you'd decrypt the secret key and use it
     const secretKey = stripeSettings.secret_key_encrypted;
 
-    // Create Stripe checkout session
-    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${secretKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
+    const stripePriceId = subscription.asset?.stripe_price_id || subscription.stripe_price_id;
+    const useSubscriptionMode = paymentMethod === "card" && stripePriceId;
+
+    let body: URLSearchParams;
+
+    if (useSubscriptionMode) {
+      // Use pre-created recurring price -> Stripe Subscription checkout
+      body = new URLSearchParams({
+        "mode": "subscription",
+        "success_url": successUrl,
+        "cancel_url": cancelUrl,
+        "line_items[0][price]": stripePriceId,
+        "line_items[0][quantity]": "1",
+        "customer_email": subscription.asset?.client?.email || "",
+        "metadata[subscription_id]": subscriptionId,
+        "metadata[payment_id]": payment.id,
+        "metadata[asset_id]": subscription.asset?.id || "",
+        "subscription_data[metadata][subscription_id]": subscriptionId,
+        "subscription_data[metadata][asset_id]": subscription.asset?.id || "",
+      });
+    } else {
+      // One-time checkout for PIX or cards without a saved price_id
+      body = new URLSearchParams({
         "payment_method_types[0]": paymentMethod === "pix" ? "pix" : "card",
         "mode": "payment",
         "success_url": successUrl,
@@ -108,7 +121,17 @@ Deno.serve(async (req) => {
         "metadata[payment_id]": payment.id,
         "metadata[asset_id]": subscription.asset?.id || "",
         ...(paymentMethod === "pix" && { "payment_method_options[pix][expires_after_seconds]": "86400" }),
-      }),
+      });
+    }
+
+    // Create Stripe checkout session
+    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${secretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
     });
 
     const stripeSession = await stripeResponse.json();
@@ -132,6 +155,7 @@ Deno.serve(async (req) => {
         sessionId: stripeSession.id,
         url: stripeSession.url,
         publishableKey: stripeSettings.publishable_key,
+        mode: useSubscriptionMode ? "subscription" : "payment",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
