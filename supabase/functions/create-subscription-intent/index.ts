@@ -108,8 +108,21 @@ Deno.serve(async (req) => {
 
     const paymentIntent = stripeSub.latest_invoice?.payment_intent;
     if (!paymentIntent?.client_secret) {
-      return json({ error: "Não foi possível iniciar o pagamento da assinatura" });
+      console.error("No payment intent on invoice:", JSON.stringify({
+        subscription_status: stripeSub.status,
+        invoice_status: stripeSub.latest_invoice?.status,
+        invoice_total: stripeSub.latest_invoice?.total,
+        currency: stripeSub.latest_invoice?.currency,
+        last_finalization_error: stripeSub.latest_invoice?.last_finalization_error,
+      }));
+      const finErr = stripeSub.latest_invoice?.last_finalization_error?.message;
+      return json({
+        error: finErr
+          ? `Stripe: ${finErr}`
+          : "Não foi possível iniciar o pagamento da assinatura",
+      });
     }
+
 
     // Register a pending payment locally
     const { data: payment } = await supabase
