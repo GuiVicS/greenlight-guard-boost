@@ -228,6 +228,7 @@ export default function Subscriptions() {
       due_date: subscription.due_date,
       status: subscription.status,
       country: (subscription as any).country || 'BR',
+      stripe_recurring: !!(subscription as any).stripe_price_id,
     });
     setIsDialogOpen(true);
   };
