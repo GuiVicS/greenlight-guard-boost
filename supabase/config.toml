@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.evolution-instance]
 verify_jwt = false
+
+[functions.send-payment-failed-whatsapp]
+verify_jwt = false
