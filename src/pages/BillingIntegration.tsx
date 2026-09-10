@@ -307,6 +307,33 @@ export default function BillingIntegration() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label>API Key Global</Label>
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type={showEvolutionKey ? 'text' : 'password'}
+                      value={evolutionApiKey}
+                      onChange={(e) => setEvolutionApiKey(e.target.value)}
+                      placeholder={evolutionKeySaved ? '•••••••••••• (salva)' : 'Sua API Key global da Evolution'}
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEvolutionKey(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={showEvolutionKey ? 'Ocultar chave' : 'Mostrar chave'}
+                    >
+                      {showEvolutionKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {evolutionKeySaved
+                      ? 'Chave já salva. Preencha apenas se quiser substituí-la.'
+                      : 'Obrigatória para enviar mensagens. Fica guardada no servidor e nunca é exibida novamente.'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <Label>Template da Mensagem</Label>
                   <Textarea
                     value={settings.whatsapp_message_template}
