@@ -49,20 +49,17 @@ export default function Assets() {
     status: 'active' as 'active' | 'blocked',
     block_reason: '',
     infoproduct_url: '',
-    stripe_price_id: '',
     checkout_mode: 'br' as 'br' | 'global',
   });
-  const [stripeEnabled, setStripeEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const fetchData = async () => {
     try {
-      const [assetsRes, clientsRes, stripeRes] = await Promise.all([
+      const [assetsRes, clientsRes] = await Promise.all([
         supabase.from('assets').select('*, clients(name)').order('created_at', { ascending: false }),
         supabase.from('clients').select('id, name'),
-        supabase.from('stripe_settings').select('is_enabled, is_configured').maybeSingle(),
       ]);
 
       if (assetsRes.error) throw assetsRes.error;
@@ -70,7 +67,6 @@ export default function Assets() {
 
       setAssets(assetsRes.data || []);
       setClients(clientsRes.data || []);
-      setStripeEnabled(Boolean(stripeRes.data?.is_enabled && stripeRes.data?.is_configured));
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -99,7 +95,6 @@ export default function Assets() {
         status: formData.status,
         block_reason: formData.status === 'blocked' ? formData.block_reason : null,
         infoproduct_url: formData.type === 'infoproduct' ? formData.infoproduct_url : null,
-        stripe_price_id: formData.stripe_price_id.trim() || null,
         checkout_mode: formData.checkout_mode,
       };
 
@@ -122,7 +117,7 @@ export default function Assets() {
 
       setIsDialogOpen(false);
       setEditingAsset(null);
-      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', stripe_price_id: '', checkout_mode: 'br' });
+      setFormData({ name: '', type: 'custom', client_id: '', status: 'active', block_reason: '', infoproduct_url: '', checkout_mode: 'br' });
       fetchData();
     } catch (error: any) {
       toast({
@@ -144,7 +139,6 @@ export default function Assets() {
       status: asset.status as 'active' | 'blocked',
       block_reason: asset.block_reason || '',
       infoproduct_url: (asset as any).infoproduct_url || '',
-      stripe_price_id: (asset as any).stripe_price_id || '',
       checkout_mode: ((asset as any).checkout_mode === 'global' ? 'global' : 'br') as 'br' | 'global',
     });
     setIsDialogOpen(true);
