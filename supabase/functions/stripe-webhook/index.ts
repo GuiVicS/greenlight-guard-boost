@@ -269,6 +269,14 @@ Deno.serve(async (req) => {
                 amount: session.amount_total,
               },
             });
+
+            await dispatchWebhook(supabase, "subscription.created", {
+              subscription_id: subscriptionId,
+              stripe_subscription_id: session.subscription,
+              stripe_customer_id: session.customer,
+              plan_name: subscription.plan_name,
+              amount: session.amount_total ? session.amount_total / 100 : null,
+            });
           }
         }
         break;
