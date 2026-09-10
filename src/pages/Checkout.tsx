@@ -353,9 +353,9 @@ export default function Checkout() {
 
   const primaryColor = subscription.asset.checkout_primary_color || "#10B981";
   const isDarkTheme = subscription.asset.checkout_theme === 'dark';
-  const showBoleto = paymentMethods.some(m => m.method_name === 'boleto' && m.is_enabled);
-  const showPix = paymentMethods.some(m => m.method_name === 'pix' && m.is_enabled);
-  const showCard = paymentMethods.some(m => m.method_name === 'card' && m.is_enabled);
+  const showBoleto = !isGlobalCheckout && paymentMethods.some(m => m.method_name === 'boleto' && m.is_enabled);
+  const showPix = !isGlobalCheckout && paymentMethods.some(m => m.method_name === 'pix' && m.is_enabled);
+  const showCard = isGlobalCheckout || paymentMethods.some(m => m.method_name === 'card' && m.is_enabled);
   const formattedAmount = formatCurrency(subscription.monthly_value, country);
   
   // Determine redirect URL: infoproduct_url takes priority, then return_url
