@@ -16,10 +16,12 @@ interface SubscriptionData {
   plan_name: string;
   monthly_value: number;
   country: string;
+  stripe_price_id: string | null;
   asset: {
     id: string;
     name: string;
     type: string;
+    stripe_price_id: string | null;
     infoproduct_url: string | null;
     checkout_logo_url: string | null;
     checkout_message: string | null;
