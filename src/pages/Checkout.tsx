@@ -193,11 +193,8 @@ export default function Checkout() {
     }
   };
 
-  // Check if a method uses Stripe based on payment_methods_config
-  const methodUsesStripe = (method: string): boolean => {
-    const config = paymentMethods.find(m => m.method_name === method && m.is_enabled);
-    return config?.gateway_type === 'stripe';
-  };
+  // Regra fixa: cartão e boleto sempre pela Stripe; Pix sempre pelo Mercado Pago
+  const methodUsesStripe = (method: string): boolean => method === 'card' || method === 'boleto';
 
   // Stripe subscription checkout uses a hosted Checkout Session when a recurring price_id is linked.
   const shouldUseStripeSubscriptionCheckout = (method: string): boolean => {
