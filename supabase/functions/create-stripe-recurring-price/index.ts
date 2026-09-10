@@ -50,8 +50,8 @@ Deno.serve(async (req) => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        name: planName,
-        metadata: JSON.stringify({ asset_id: assetId }),
+        "name": planName,
+        "metadata[asset_id]": assetId,
       }),
     });
 
