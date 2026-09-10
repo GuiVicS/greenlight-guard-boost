@@ -150,7 +150,7 @@ export default function Subscriptions() {
               assetId: formData.asset_id,
               planName: formData.plan_name,
               monthlyValue: parseFloat(formData.monthly_value),
-              country: formData.country,
+              country: (selectedAsset as any)?.checkout_mode === 'global' ? 'US' : formData.country,
             },
           });
 
