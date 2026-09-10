@@ -144,6 +144,14 @@ const AppRoutes = () => (
       }
     />
     <Route
+      path="/integrations/whatsapp"
+      element={
+        <ProtectedRoute>
+          <WhatsAppIntegration />
+        </ProtectedRoute>
+      }
+    />
+    <Route
       path="/settings"
       element={
         <ProtectedRoute>
