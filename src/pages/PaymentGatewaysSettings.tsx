@@ -517,6 +517,38 @@ export default function PaymentGatewaysSettings() {
 
           {/* MERCADO PAGO TAB */}
           <TabsContent value="mercadopago" className="space-y-6">
+            <IntegrationWizard
+              title="Assistente de configuração — Mercado Pago (Pix)"
+              steps={[
+                {
+                  title: 'Ative o modo produção',
+                  description: 'Desligue a chave "Sandbox" abaixo. Pix de sandbox não é reconhecido pelos bancos reais.',
+                  done: !mpSettings.is_sandbox,
+                },
+                {
+                  title: 'Copie suas credenciais de produção',
+                  description: 'No painel de desenvolvedores do Mercado Pago, copie o Access Token (APP_USR-...) e a Public Key de produção.',
+                  done: Boolean(mpSettings.access_token_encrypted) && Boolean(mpSettings.public_key),
+                  link: { label: 'Abrir credenciais do Mercado Pago', url: 'https://www.mercadopago.com.br/developers/panel/app' },
+                },
+                {
+                  title: 'Cole as credenciais e salve',
+                  description: 'Preencha Access Token e Public Key no formulário abaixo e clique em salvar.',
+                  done: mpSettings.is_configured,
+                },
+                {
+                  title: 'Configure a notificação (webhook)',
+                  description: 'No painel do Mercado Pago, cadastre a URL abaixo para receber a confirmação automática dos pagamentos Pix.',
+                  done: Boolean(mpSettings.webhook_secret_encrypted),
+                  code: 'https://hthupflasjifsweetqhx.supabase.co/functions/v1/mercadopago-webhook',
+                },
+                {
+                  title: 'Ative o Mercado Pago',
+                  description: 'Ligue a chave de ativação no topo para liberar o Pix no checkout.',
+                  done: mpSettings.is_enabled,
+                },
+              ]}
+            />
             {/* Status Card */}
             <div className={cn(
               "glass-card p-6 flex items-center gap-4",
